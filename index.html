@@ -769,6 +769,14 @@
       </div>
       <div class="cat-chip-wrap" id="categoriesList"></div>
     </div>
+    <div class="card">
+      <h2>ترقيم السندات</h2>
+      <p class="hint">حدد الرقم الذي تبدأ منه سلسلة ترقيم كل نوع من السندات (تحويل، تخفيض، تالف، مرتجع). يُطبَّق هذا الرقم فقط على أول سند جديد يُنشأ من كل نوع لم يصدر له سند بعد؛ وبعد ذلك يستمر الترقيم بالتصاعد تلقائيًا ولا يعود للبداية أبدًا حتى لو حُذفت كل السندات السابقة.</p>
+      <div class="add-cat-row">
+        <div class="field"><label>رقم بداية الترقيم</label><input type="number" id="invoiceStartInput" min="1" step="1" placeholder="100"></div>
+        <button class="btn btn-primary" id="saveInvoiceStartBtn" type="button">💾 حفظ</button>
+      </div>
+    </div>
     <div class="card danger-zone">
       <h2>منطقة الحذف</h2>
       <p class="hint">حذف كل سجلات المستودع الحالي على هذا الجهاز نهائيًا، وإعادة البرنامج لشاشة اختيار المستودع من جديد (كأنه فُتح لأول مرة). لا يمكن التراجع، ولا يُستخدم هذا الخيار لمجرد تصحيح اسم مستودع (استخدم زر ✏️ بجانب اسم المستودع في قسم "المستودعات والفروع" أعلاه لذلك). يُفضل أخذ نسخة احتياطية أولًا.</p>
@@ -988,13 +996,24 @@ document.getElementById('pwChangeSaveBtn').addEventListener('click', function(){
 function recordsKey(p){ return 'awt_records_'+p; }
 function counterKey(p){ return 'awt_counter_'+p; }
 
+/* رقم بداية الترقيم التسلسلي للسندات (قابل للتعديل من تبويب "الإعدادات").
+ * يُستخدم فقط كنقطة انطلاق أول مرة يُنشأ فيها سند من نوع معيّن (أي عندما لا
+ * يوجد بعد عدّاد محفوظ لذلك النوع)؛ بعد ذلك يستمر العدّاد بالتصاعد تلقائيًا
+ * ولا يتأثر إطلاقًا بحذف أي سند لاحقًا، ولا حتى بتغيير هذا الرقم مجددًا. */
+function getInvoiceStartNumber(){
+  var v = parseInt(localStorage.getItem('awt_invoice_start') || '100', 10);
+  if(isNaN(v) || v < 1) v = 100;
+  return v;
+}
+
 function loadRecords(p){
   try{ return JSON.parse(localStorage.getItem(recordsKey(p))||'[]'); }catch(e){ return []; }
 }
 function saveRecords(p, arr){ localStorage.setItem(recordsKey(p), JSON.stringify(arr)); }
 
 function nextVoucherNo(p){
-  var n = parseInt(localStorage.getItem(counterKey(p))||'0',10) + 1;
+  var start = getInvoiceStartNumber();
+  var n = parseInt(localStorage.getItem(counterKey(p)) || String(start - 1), 10) + 1;
   localStorage.setItem(counterKey(p), String(n));
   return p + '-' + String(n).padStart(5,'0');
 }
@@ -2326,6 +2345,21 @@ document.getElementById('importFile').addEventListener('change', function(e){
 
 document.getElementById('changeWhBtn').addEventListener('click', changeWarehouse);
 
+(function(){
+  var input = document.getElementById('invoiceStartInput');
+  input.value = getInvoiceStartNumber();
+  document.getElementById('saveInvoiceStartBtn').addEventListener('click', function(){
+    var val = parseInt(input.value, 10);
+    if(isNaN(val) || val < 1){
+      toast('أدخل رقمًا صحيحًا أكبر من صفر');
+      return;
+    }
+    localStorage.setItem('awt_invoice_start', String(val));
+    input.value = val;
+    toast('تم الحفظ. سيبدأ منه أول سند جديد لم يصدر له سند بعد من كل نوع');
+  });
+})();
+
 document.getElementById('wipeBtn').addEventListener('click', function(){
   var profile = activeProfile();
   if(!profile) return;
@@ -2348,7 +2382,8 @@ function discCounterKey(p){ return 'awt_disc_counter_'+p; }
 function loadDiscRecords(p){ try{ return JSON.parse(localStorage.getItem(discRecordsKey(p))||'[]'); }catch(e){ return []; } }
 function saveDiscRecords(p, arr){ localStorage.setItem(discRecordsKey(p), JSON.stringify(arr)); }
 function nextDiscountNo(p){
-  var n = parseInt(localStorage.getItem(discCounterKey(p))||'0',10) + 1;
+  var discStart = getInvoiceStartNumber();
+  var n = parseInt(localStorage.getItem(discCounterKey(p)) || String(discStart - 1), 10) + 1;
   localStorage.setItem(discCounterKey(p), String(n));
   return p + '-KHFD-' + String(n).padStart(5,'0');
 }
@@ -2571,7 +2606,8 @@ function dmgCounterKey(p){ return 'awt_dmg_counter_'+p; }
 function loadDmgRecords(p){ try{ return JSON.parse(localStorage.getItem(dmgRecordsKey(p))||'[]'); }catch(e){ return []; } }
 function saveDmgRecords(p, arr){ localStorage.setItem(dmgRecordsKey(p), JSON.stringify(arr)); }
 function nextDamagedNo(p){
-  var n = parseInt(localStorage.getItem(dmgCounterKey(p))||'0',10) + 1;
+  var dmgStart = getInvoiceStartNumber();
+  var n = parseInt(localStorage.getItem(dmgCounterKey(p)) || String(dmgStart - 1), 10) + 1;
   localStorage.setItem(dmgCounterKey(p), String(n));
   return p + '-TLF-' + String(n).padStart(5,'0');
 }
@@ -2789,7 +2825,8 @@ function retCounterKey(p){ return 'awt_ret_counter_'+p; }
 function loadRetRecords(p){ try{ return JSON.parse(localStorage.getItem(retRecordsKey(p))||'[]'); }catch(e){ return []; } }
 function saveRetRecords(p, arr){ localStorage.setItem(retRecordsKey(p), JSON.stringify(arr)); }
 function nextReturnNo(p){
-  var n = parseInt(localStorage.getItem(retCounterKey(p))||'0',10) + 1;
+  var retStart = getInvoiceStartNumber();
+  var n = parseInt(localStorage.getItem(retCounterKey(p)) || String(retStart - 1), 10) + 1;
   localStorage.setItem(retCounterKey(p), String(n));
   return p + '-MRTJ-' + String(n).padStart(5,'0');
 }
