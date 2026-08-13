@@ -1,0 +1,3087 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>أصالة الهرم | نظام التحويلات المخزنية</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --ink:#1D231B;
+    --ink-soft:#5C6459;
+    --stone:#ECE8DD;
+    --stone-2:#DFDACB;
+    --panel:#FFFFFF;
+    --pine:#16302B;
+    --pine-2:#1F4741;
+    --pine-3:#274F48;
+    --gold:#B8863B;
+    --gold-light:#D9B36C;
+    --line:#D8D2C0;
+    --danger:#A23B2E;
+    --danger-bg:#F6E5E1;
+    --ok:#2F6B4F;
+    --ok-bg:#E4EFE6;
+    --radius:12px;
+    --shadow:0 2px 10px rgba(22,48,43,.08), 0 1px 3px rgba(22,48,43,.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--stone);
+    color:var(--ink);
+    font-family:'Tajawal',sans-serif;
+    padding-bottom:120px;
+    min-height:100vh;
+  }
+  h1,h2,h3,.display{font-family:'Cairo',sans-serif;}
+  button{font-family:inherit;cursor:pointer;}
+  input,select,textarea{font-family:inherit;}
+
+  /* ---------- Pyramid mark ---------- */
+  .pyr-mark{
+    width:30px;height:26px;position:relative;flex:none;
+  }
+  .pyr-mark .tier{
+    position:absolute;left:50%;bottom:0;transform:translateX(-50%);
+    background:linear-gradient(180deg,var(--gold-light),var(--gold));
+    border-radius:2px 2px 0 0;
+  }
+  .pyr-mark .t1{width:30px;height:8px;}
+  .pyr-mark .t2{width:20px;height:8px;bottom:8px;opacity:.92;}
+  .pyr-mark .t3{width:10px;height:8px;bottom:16px;opacity:.85;}
+
+  /* ---------- Header ---------- */
+  .sticky-top{position:sticky;top:0;z-index:30;box-shadow:var(--shadow);background:var(--stone);}
+  header.app-header{
+    background:var(--pine);
+    color:#F4F1E6;
+    padding:14px 20px;
+    display:flex;flex-direction:column;
+    gap:8px;
+  }
+  .header-line{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  .header-line:last-child:empty{display:none;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .app-header .pyr-mark{width:34px;height:30px;}
+  .app-header .pyr-mark .t1{width:34px;height:9px;}
+  .app-header .pyr-mark .t2{width:23px;height:9px;bottom:9px;}
+  .app-header .pyr-mark .t3{width:12px;height:9px;bottom:18px;}
+  .brand-text h1{font-size:22px;margin:0;font-weight:800;letter-spacing:.3px;}
+  .brand-text p{margin:2px 0 0;font-size:12.5px;color:#C9CFC3;font-weight:500;}
+  .icon-btn{
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);
+    color:#F4F1E6;width:38px;height:38px;border-radius:9px;
+    display:flex;align-items:center;justify-content:center;font-size:16px;
+    transition:.15s;flex:none;
+  }
+  .icon-btn:hover{background:rgba(255,255,255,.18);}
+  .toggle-mode{
+    display:flex;background:rgba(255,255,255,.08);border-radius:999px;padding:3px;
+    border:1px solid rgba(217,179,108,.4);
+  }
+  .toggle-mode button{
+    border:none;background:transparent;color:#D9D4C4;font-size:12.5px;font-weight:700;
+    padding:7px 13px;border-radius:999px;transition:.15s;
+  }
+  .toggle-mode button.active{background:var(--gold);color:#20140A;}
+
+  /* status line: gear + current warehouse name, سطر واحد مضغوط */
+  .status-line{gap:10px;flex-wrap:nowrap;justify-content:flex-start;}
+  .status-text{
+    flex:1;min-width:0;
+    font-size:13px;font-weight:700;color:#E9E5D6;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+
+  /* ---------- Tabs ---------- */
+  nav.tabs{
+    display:flex;gap:6px;padding:12px 16px 0;max-width:980px;margin:0 auto;
+    overflow-x:auto;
+  }
+  nav.tabs button{
+    border:none;background:transparent;color:var(--ink-soft);
+    padding:10px 16px;font-weight:700;font-size:13.5px;border-radius:10px 10px 0 0;
+    border-bottom:3px solid transparent;white-space:nowrap;
+  }
+  nav.tabs button.active{color:var(--pine);border-bottom-color:var(--gold);background:var(--panel);}
+
+  main{max-width:980px;margin:0 auto;padding:18px 16px 40px;}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;animation:fadein .18s ease;}
+  @keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px;margin-bottom:16px;box-shadow:var(--shadow);
+  }
+  .card h2{font-size:16px;margin:0 0 4px;color:var(--pine);}
+  .card .hint{font-size:12px;color:var(--ink-soft);margin:0 0 14px;}
+
+  /* stats */
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
+  .stat-box{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:14px 12px;text-align:center;box-shadow:var(--shadow);
+  }
+  .stat-box .num{font-family:'Cairo',sans-serif;font-size:22px;font-weight:800;color:var(--pine);}
+  .stat-box .lbl{font-size:11px;color:var(--ink-soft);margin-top:3px;}
+
+  label{display:block;font-size:12.5px;font-weight:700;color:var(--ink-soft);margin-bottom:5px;}
+  .field{margin-bottom:12px;}
+  input[type=text],input[type=date],input[type=number],input[type=password],select,textarea{
+    width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:9px;
+    font-size:14px;background:#FBFAF6;color:var(--ink);transition:.15s;
+  }
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);background:#fff;}
+  input[type=date]{direction:ltr;text-align:right;}
+  textarea{resize:vertical;min-height:56px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media(max-width:640px){.row2{grid-template-columns:1fr;} .stats-row{grid-template-columns:1fr 1fr;}}
+
+  /* ---------- Mobile-first usability ---------- */
+  @media(max-width:640px){
+    nav.tabs{gap:2px;padding:8px 8px 0;-webkit-overflow-scrolling:touch;}
+    nav.tabs button{padding:10px 12px;font-size:12.5px;}
+    main{padding:14px 10px 40px;}
+    .card{padding:14px;}
+    input[type=text],input[type=date],input[type=number],input[type=password],select,textarea{
+      font-size:16px; /* يمنع تكبير الصفحة تلقائيًا عند التركيز على الحقل بالهاتف */
+      padding:12px;
+    }
+    .btn{width:100%;justify-content:center;padding:13px 16px;font-size:14.5px;}
+    .actions-bar{flex-direction:column;gap:8px;}
+    .actions-bar > *{width:100%;}
+    .add-cat-row{flex-direction:column;align-items:stretch;}
+    .add-cat-row .field{min-width:0;}
+    .add-cat-row button{width:100%;height:44px;}
+    .stat-box .num{font-size:18px;}
+
+    /* هيدر مصغّر مخصص للهاتف (البرنامج يعمل على الهاتف فقط) */
+    header.app-header{padding:8px 10px;gap:4px;}
+    .app-header .pyr-mark{width:20px;height:17px;}
+    .app-header .pyr-mark .t1{width:20px;height:5px;}
+    .app-header .pyr-mark .t2{width:14px;height:5px;bottom:5px;}
+    .app-header .pyr-mark .t3{width:7px;height:5px;bottom:10px;}
+    .brand{gap:6px;}
+    .brand-text h1{font-size:14px;}
+    .brand-text p{display:none;} /* الوصف الفرعي غير ضروري، حذفه يوفر مساحة */
+    .icon-btn{width:26px;height:26px;font-size:12px;}
+    .toggle-mode button{padding:4px 8px;font-size:10.5px;}
+    .status-text{font-size:11px;}
+  }
+
+  .date-field{max-width:170px;margin-bottom:14px;}
+  .date-field input{padding:10px 8px;font-size:13px;}
+
+  .dest-block{
+    border:1.5px dashed var(--line);border-radius:var(--radius);padding:14px;margin-bottom:12px;background:#FCFBF7;
+  }
+  .dest-block .dest-top{display:flex;gap:12px;align-items:flex-end;margin-bottom:14px;flex-wrap:wrap;}
+  .dest-block .dest-top .field{flex:1;margin-bottom:0;min-width:180px;}
+  .dest-block .dest-top .date-field{flex:0 0 130px;max-width:none;}
+  .dest-block .dest-top .date-field input{padding:10px 8px;font-size:13px;}
+  @media(max-width:640px){
+    .dest-block .dest-top{flex-direction:column;align-items:stretch;gap:10px;}
+    .dest-block .dest-top .field{min-width:0;}
+    .dest-block .dest-top .date-field{flex:none;max-width:150px;}
+  }
+  .remove-dest{
+    background:var(--danger-bg);color:var(--danger);border:none;border-radius:8px;
+    padding:9px 12px;font-size:12px;font-weight:700;height:42px;
+    width:100%;display:block;margin-bottom:12px;
+  }
+  .item-row{
+    display:grid;grid-template-columns:1.2fr .55fr .7fr 1fr auto;gap:8px;margin-bottom:8px;align-items:center;
+    background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px;
+  }
+  .item-row-labels{display:grid;grid-template-columns:1.2fr .55fr .7fr 1fr auto;gap:8px;margin-bottom:6px;padding:0 8px;}
+  .item-row-labels span{font-size:11px;font-weight:700;color:var(--ink-soft);}
+  .item-field{display:flex;flex-direction:column;gap:4px;}
+  .item-field .mobile-label{display:none;}
+  .del-row-text{display:none;}
+  .item-row .del-row{
+    background:transparent;border:1px solid var(--line);color:var(--danger);border-radius:8px;
+    width:38px;height:38px;font-size:16px;display:flex;align-items:center;justify-content:center;gap:5px;flex:none;
+  }
+  @media(max-width:640px){
+    .item-row-labels{display:none;}
+    .item-row{
+      grid-template-columns:1fr 1fr !important;
+      background:#FCFBF7;padding:12px;gap:8px 10px;
+    }
+    .item-field .mobile-label{display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);}
+    .item-field:last-of-type{grid-column:1 / -1;} /* حقل الملاحظة يأخذ العرض الكامل */
+    .item-row .del-row{grid-column:1 / -1;width:100%;height:44px;font-size:13.5px;font-weight:700;}
+    .del-row-text{display:inline;}
+  }
+  .add-row-btn{
+    background:none;border:1.5px dashed var(--gold);color:var(--gold);border-radius:8px;
+    padding:8px 14px;font-size:12.5px;font-weight:700;margin-top:2px;
+  }
+  .add-dest-btn{
+    background:var(--pine-2);color:#fff;border:none;border-radius:9px;
+    padding:10px 16px;font-size:13px;font-weight:700;
+  }
+
+  .actions-bar{
+    display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;padding-top:16px;border-top:1px solid var(--line);
+  }
+  .btn{
+    border:none;border-radius:10px;padding:12px 18px;font-size:14px;font-weight:700;
+    display:flex;align-items:center;gap:8px;transition:.15s;
+  }
+  .btn-primary{background:var(--pine);color:#fff;}
+  .btn-primary:hover{background:var(--pine-3);}
+  .btn-gold{background:var(--gold);color:#26170A;}
+  .btn-gold:hover{background:var(--gold-light);}
+  .btn-ghost{background:#fff;color:var(--pine);border:1.5px solid var(--line);}
+  .btn-ghost:hover{border-color:var(--gold);}
+  .btn-danger{background:var(--danger-bg);color:var(--danger);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+
+  /* records */
+  .filters{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
+  @media(max-width:700px){.filters{grid-template-columns:1fr 1fr;}}
+  table.records{width:100%;border-collapse:collapse;font-size:13px;}
+  table.records th{
+    text-align:right;background:var(--stone);color:var(--pine);padding:9px 8px;font-size:11.5px;
+    border-bottom:2px solid var(--line);white-space:nowrap;
+  }
+  table.records td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap;}
+  table.records tr:hover td{background:#FBF9F3;}
+  .table-wrap{overflow-x:auto;}
+  .badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;}
+  .badge-out{background:var(--ok-bg);color:var(--ok);}
+  .row-actions{display:flex;gap:5px;flex-wrap:wrap;}
+  .mini-btn{
+    border:1px solid var(--line);background:#fff;border-radius:7px;padding:5px 9px;font-size:11.5px;font-weight:700;color:var(--pine);
+  }
+  .mini-btn.danger{color:var(--danger);}
+  .empty-state{text-align:center;padding:40px 20px;color:var(--ink-soft);}
+  .empty-state .pyr-mark{margin:0 auto 12px;transform:scale(1.6);}
+
+  /* setup modal */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(22,48,43,.72);z-index:100;
+    display:flex;align-items:center;justify-content:center;padding:20px;
+  }
+  .modal-box{
+    background:var(--panel);border-radius:16px;max-width:520px;width:100%;padding:26px;
+    box-shadow:0 20px 60px rgba(0,0,0,.3);
+  }
+  .modal-box h2{color:var(--pine);margin:0 0 6px;font-size:20px;}
+  .modal-box p{color:var(--ink-soft);font-size:13px;margin:0 0 18px;}
+  .branch-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .branch-grid button{
+    background:var(--stone);border:1.5px solid var(--line);border-radius:10px;padding:14px 10px;
+    font-weight:700;font-size:13.5px;color:var(--pine);text-align:center;transition:.15s;
+  }
+  .branch-grid button:hover{border-color:var(--gold);background:#fff;}
+
+  /* toast */
+  .toast{
+    position:fixed;bottom:96px;right:50%;transform:translateX(50%);
+    background:var(--pine);color:#fff;padding:12px 22px;border-radius:999px;
+    font-size:13.5px;font-weight:700;box-shadow:var(--shadow);z-index:200;
+    display:none;align-items:center;gap:8px;
+  }
+  .toast.show{display:flex;animation:toastin .2s ease;}
+  @keyframes toastin{from{opacity:0;transform:translate(50%,10px);}to{opacity:1;transform:translate(50%,0);}}
+
+  /* support bar */
+  footer.support-bar{
+    position:fixed;bottom:0;right:0;left:0;background:var(--pine);color:#F4F1E6;
+    padding:10px 18px;display:flex;align-items:center;justify-content:center;gap:14px;
+    font-size:12.5px;z-index:40;border-top:2px solid var(--gold);flex-wrap:wrap;text-align:center;
+  }
+  footer.support-bar b{color:var(--gold-light);font-weight:700;}
+  footer.support-bar a{color:#F4F1E6;text-decoration:none;font-weight:700;}
+
+  /* danger zone */
+  .danger-zone{border:1.5px solid var(--danger-bg);background:#FBF3F1;}
+  .danger-zone h2{color:var(--danger);}
+
+  /* category manager */
+  .cat-chip-wrap{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
+  .cat-chip{
+    display:flex;align-items:center;gap:6px;background:var(--stone);border:1px solid var(--line);
+    border-radius:999px;padding:6px 6px 6px 14px;font-size:12.5px;font-weight:700;color:var(--pine);
+  }
+  .cat-chip button{
+    background:none;border:none;color:var(--danger);font-size:13px;line-height:1;
+    width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  }
+  .cat-chip button:hover{background:var(--danger-bg);}
+  .cat-empty{font-size:12.5px;color:var(--ink-soft);margin-top:10px;}
+  .add-cat-row{display:flex;gap:8px;align-items:flex-end;max-width:420px;flex-wrap:wrap;}
+  .add-cat-row .field{flex:1;min-width:180px;margin-bottom:0;}
+  .add-cat-row button{height:42px;flex:none;}
+
+  /* print area (hidden on screen) */
+  #printArea{display:none;}
+  @media print{
+    html, body{height:auto !important;min-height:0 !important;padding:0 !important;background:#fff !important;}
+    .sticky-top, main, .toast, .modal-overlay{display:none !important;}
+    #printArea{display:block !important;position:static !important;background:#fff;}
+    #printArea, #printArea *{visibility:visible;}
+    .voucher-page{page-break-after:always;}
+    .voucher-page:last-child{page-break-after:auto;}
+  }
+  .voucher-page{
+    width:100%;max-width:740px;margin:0 auto;padding:26px;font-family:'Tajawal',sans-serif;color:#1D231B;
+  }
+  .v-head{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #B8863B;padding-bottom:12px;margin-bottom:16px;}
+  .v-head .v-brand{display:flex;align-items:center;gap:10px;}
+  .v-head h2{font-family:'Cairo',sans-serif;margin:0;font-size:19px;color:#16302B;}
+  .v-head p{margin:2px 0 0;font-size:11px;color:#5C6459;}
+  .v-title{text-align:center;font-family:'Cairo',sans-serif;font-weight:800;font-size:15px;color:#16302B;margin:14px 0;}
+  .v-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;background:#ECE8DD;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:12.5px;}
+  .v-meta div b{display:block;color:#5C6459;font-size:10.5px;font-weight:700;margin-bottom:2px;}
+  .v-route{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px;font-family:'Cairo',sans-serif;font-weight:800;font-size:14px;color:#16302B;}
+  .v-route .box{background:#16302B;color:#F4F1E6;padding:8px 16px;border-radius:8px;}
+  .v-route .arrow{color:#B8863B;font-size:18px;}
+  table.v-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:14px;}
+  table.v-table th{background:#16302B;color:#F4F1E6;padding:8px;text-align:right;font-size:11.5px;}
+  table.v-table td{padding:8px;border-bottom:1px solid #D8D2C0;}
+  table.v-table tr:last-child td{font-weight:800;background:#ECE8DD;}
+  .v-notes{font-size:12px;color:#5C6459;background:#FBFAF6;border:1px dashed #D8D2C0;border-radius:8px;padding:10px;margin-bottom:20px;}
+  .merge-badge{display:inline-block;background:#ECE8DD;color:#B8863B;border:1px solid #D9B36C;border-radius:6px;padding:0 5px;font-size:10px;font-weight:800;margin-right:4px;}
+  .v-merge-hint{font-size:10px;color:#8A8474;margin:-8px 0 14px;}
+  .v-sign{display:flex;justify-content:space-between;margin-top:30px;}
+  .v-sign div{width:45%;text-align:center;font-size:12px;color:#5C6459;}
+  .v-sign div .line{border-top:1.5px solid #5C6459;margin-top:36px;padding-top:6px;}
+  .v-foot{margin-top:26px;border-top:1px solid #D8D2C0;padding-top:10px;font-size:10.5px;color:#8A8474;display:flex;justify-content:space-between;}
+</style>
+</head>
+<body>
+
+<!-- ===================== SETUP MODAL ===================== -->
+<div id="setupModal" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h2>مرحبًا بك في نظام أصالة الهرم</h2>
+    <p>اختر المستودع الذي تعمل منه على هذا الجهاز. سيتم حفظ هذا الاختيار محليًا، وسجلاتك ستكون خاصة بهذا الجهاز فقط.</p>
+    <div class="branch-grid" id="branchGrid"></div>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:16px;font-weight:700;font-size:12.5px;color:var(--ink-soft);cursor:pointer;">
+      <input type="checkbox" id="setupDualMainCheckbox" style="width:16px;height:16px;margin:0;">
+      فعّل أيضًا صفة "المستودع الرئيسي" على هذا الجهاز (يمكن تغيير هذا لاحقًا من الإعدادات)
+    </label>
+  </div>
+</div>
+
+<!-- ===================== PASSWORD CREATE MODAL ===================== -->
+<div id="pwCreateModal" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h2>تعيين كلمة سر الحماية</h2>
+    <p>هذه الكلمة ستكون مطلوبة عند أي عملية حذف داخل البرنامج (سجل مفرد أو حذف جماعي). احتفظ بها في مكان آمن.</p>
+    <div class="field"><label>كلمة السر</label><input type="password" id="pwCreate1" placeholder="4 أحرف/أرقام على الأقل"></div>
+    <div class="field"><label>تأكيد كلمة السر</label><input type="password" id="pwCreate2" placeholder="أعد كتابة كلمة السر"></div>
+    <div id="pwCreateError" style="color:#A23B2E;font-size:12.5px;margin-bottom:10px;display:none;">كلمتا السر غير متطابقتين أو قصيرتان جدًا</div>
+    <div class="actions-bar" style="margin-top:0;padding-top:0;border-top:none;">
+      <button class="btn btn-primary" id="pwCreateSaveBtn" style="width:100%;justify-content:center;">حفظ كلمة السر وبدء الاستخدام</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== PASSWORD VERIFY MODAL ===================== -->
+<div id="pwVerifyModal" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h2>تأكيد كلمة السر</h2>
+    <p id="pwVerifyMsg">هذه العملية تتطلب إدخال كلمة سر الحماية للمتابعة.</p>
+    <div class="field"><label>كلمة السر</label><input type="password" id="pwVerifyInput" placeholder="أدخل كلمة السر"></div>
+    <div id="pwVerifyError" style="color:#A23B2E;font-size:12.5px;margin-bottom:10px;display:none;">كلمة السر غير صحيحة</div>
+    <div class="actions-bar" style="margin-top:0;padding-top:0;border-top:none;">
+      <button class="btn btn-primary" id="pwVerifyOkBtn">تأكيد</button>
+      <button class="btn btn-ghost" id="pwVerifyCancelBtn">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== PASSWORD CHANGE MODAL ===================== -->
+<div id="pwChangeModal" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h2>تغيير كلمة السر</h2>
+    <div class="field"><label>كلمة السر الحالية</label><input type="password" id="pwChangeOld" placeholder="كلمة السر الحالية"></div>
+    <div class="field"><label>كلمة السر الجديدة</label><input type="password" id="pwChangeNew1" placeholder="كلمة السر الجديدة"></div>
+    <div class="field"><label>تأكيد كلمة السر الجديدة</label><input type="password" id="pwChangeNew2" placeholder="أعد كتابة كلمة السر الجديدة"></div>
+    <div id="pwChangeError" style="color:#A23B2E;font-size:12.5px;margin-bottom:10px;display:none;"></div>
+    <div class="actions-bar" style="margin-top:0;padding-top:0;border-top:none;">
+      <button class="btn btn-primary" id="pwChangeSaveBtn">حفظ كلمة السر الجديدة</button>
+      <button class="btn btn-ghost" id="pwChangeCancelBtn">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== HEADER + TABS (STICKY) ===================== -->
+<div class="sticky-top">
+<header class="app-header">
+  <div class="header-line">
+    <div class="brand">
+      <div class="pyr-mark"><div class="tier t1"></div><div class="tier t2"></div><div class="tier t3"></div></div>
+      <div class="brand-text">
+        <h1>أصالة الهرم</h1>
+        <p>نظام التحويلات المخزنية بين الفروع</p>
+      </div>
+    </div>
+    <div id="headerToggle"></div>
+  </div>
+  <div class="header-line status-line">
+    <button class="icon-btn" id="gearBtn" title="الإعدادات">⚙️</button>
+    <div id="statusText" class="status-text"></div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button data-tab="new" class="active">تحويل جديد</button>
+  <button data-tab="records">السجلات</button>
+  <button data-tab="confirm">تأكيد الاستلام</button>
+  <button data-tab="discount">التخفيض</button>
+  <button data-tab="damaged">التالف</button>
+  <button data-tab="return">مرتجع لتاجر</button>
+  <button data-tab="backup">الإعدادات</button>
+</nav>
+</div>
+
+<main>
+
+  <!-- ===================== TAB: NEW TRANSFER ===================== -->
+  <section class="tab-panel active" id="tab-new">
+    <div class="stats-row" id="statsRow"></div>
+
+    <div class="card">
+      <h2 id="formTitle">سند تحويل بضاعة جديد</h2>
+      <p class="hint">حدد التاريخ، وجهة أو أكثر، وأصناف كل وجهة، ثم احفظ أو اطبع أو أرسل عبر واتساب.</p>
+
+      <div class="field date-field" id="dateFieldWrap">
+        <label>التاريخ</label>
+        <input type="date" id="transferDate">
+      </div>
+      <div id="destinationsWrap"></div>
+      <button class="add-dest-btn" id="addDestBtn" type="button">+ إضافة وجهة أخرى</button>
+
+      <div class="field" style="margin-top:14px;">
+        <label>ملاحظات عامة على السند (اختياري)</label>
+        <textarea id="generalNotes" placeholder="أي تفاصيل إضافية عن هذا التحويل..."></textarea>
+      </div>
+
+      <div class="actions-bar">
+        <button class="btn btn-primary" id="saveBtn">💾 حفظ السند</button>
+        <button class="btn btn-ghost" id="pdfBtn">🖨️ طباعة</button>
+        <button class="btn btn-gold" id="waBtn">📤 إرسال واتساب</button>
+        <button class="btn btn-ghost" id="cancelEditBtn" style="display:none;">إلغاء التعديل</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB: RECORDS ===================== -->
+  <section class="tab-panel" id="tab-records">
+    <div class="card">
+      <h2>سجل السندات الصادرة</h2>
+      <p class="hint">السجلات الخاصة بمستودعك الحالي فقط، محفوظة على هذا الجهاز.</p>
+      <div class="filters">
+        <div class="field" style="margin-bottom:0;"><label>من تاريخ</label><input type="date" id="fltFrom"></div>
+        <div class="field" style="margin-bottom:0;"><label>إلى تاريخ</label><input type="date" id="fltTo"></div>
+        <div class="field" style="margin-bottom:0;"><label>المستودع الآخر</label><select id="fltWarehouse"><option value="">الكل</option></select></div>
+        <div class="field" style="margin-bottom:0;"><label>بحث في الملاحظات</label><input type="text" id="fltSearch" placeholder="كلمة..."></div>
+      </div>
+      <div class="actions-bar" style="margin-top:0;padding-top:10px;border-top:none;">
+        <button class="btn btn-ghost" id="clearFltBtn">✕ مسح الفلتر</button>
+      </div>
+      <div class="table-wrap">
+        <table class="records" id="recordsTable">
+          <thead><tr>
+            <th>رقم السند</th><th>التاريخ</th><th>إلى</th><th>الأصناف</th><th>الكمية</th><th>القيمة (ر.س)</th><th>ملاحظات</th><th>إجراءات</th>
+          </tr></thead>
+          <tbody id="recordsBody"></tbody>
+        </table>
+      </div>
+      <div id="recordsEmpty" class="empty-state" style="display:none;">
+        <div class="pyr-mark"><div class="tier t1"></div><div class="tier t2"></div><div class="tier t3"></div></div>
+        <p>لا توجد سندات مطابقة بعد. أنشئ سند تحويل جديد من التبويب الأول.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB: RECEIPT CONFIRMATION ===================== -->
+  <section class="tab-panel" id="tab-confirm">
+    <div class="card">
+      <h2>تأكيد استلام تحويل وارد</h2>
+      <p class="hint">استخدم هذا النموذج عند استلام بضاعة من مستودع آخر: أدخل ما هو مُرسَل حسب السند الوارد، وما تم استلامه فعليًا. سيحسب البرنامج النقص أو الزيادة تلقائيًا، ويولّد لك رسالة جاهزة لإرسالها للمستودع المُرسِل.</p>
+
+      <div class="row2">
+        <div class="field">
+          <label>المستودع المُرسِل (من)</label>
+          <select id="confFrom"></select>
+        </div>
+        <div class="field">
+          <label>رقم السند الوارد (كما هو مكتوب على السند، اختياري)</label>
+          <input type="text" id="confVoucherRef" placeholder="مثال: QRY-00012">
+        </div>
+      </div>
+      <div class="field" style="max-width:220px;">
+        <label>تاريخ الاستلام</label>
+        <input type="date" id="confDate">
+      </div>
+
+      <div class="item-row-labels" id="confItemLabels" style="grid-template-columns:1fr .6fr .7fr .7fr 1fr auto;">
+        <span>الصنف</span><span>السعر</span><span>الكمية المرسلة</span><span>الكمية المستلمة</span><span>ملاحظة</span><span></span>
+      </div>
+      <div id="confItemsWrap"></div>
+      <button class="add-row-btn" id="addConfItemBtn" type="button">+ إضافة صنف</button>
+
+      <div class="field" style="margin-top:14px;">
+        <label>ملاحظات عامة على الاستلام (اختياري)</label>
+        <textarea id="confNotes" placeholder="أي تفاصيل إضافية عن حالة الاستلام..."></textarea>
+      </div>
+
+      <div id="confResultBox" style="display:none;margin-top:6px;"></div>
+
+      <div class="actions-bar">
+        <button class="btn btn-primary" id="confSaveBtn">💾 حفظ تأكيد الاستلام</button>
+        <button class="btn btn-ghost" id="confPdfBtn">🖨️ طباعة</button>
+        <button class="btn btn-gold" id="confWaBtn">📤 إرسال نتيجة الاستلام واتساب</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>سجل تأكيدات الاستلام</h2>
+      <p class="hint">التأكيدات الخاصة بمستودعك الحالي فقط، محفوظة على هذا الجهاز.</p>
+      <div class="table-wrap">
+        <table class="records" id="confRecordsTable">
+          <thead><tr>
+            <th>التاريخ</th><th>من</th><th>رقم السند</th><th>الحالة</th><th>الأصناف</th><th>إجراءات</th>
+          </tr></thead>
+          <tbody id="confRecordsBody"></tbody>
+        </table>
+      </div>
+      <div id="confRecordsEmpty" class="empty-state" style="display:none;">
+        <div class="pyr-mark"><div class="tier t1"></div><div class="tier t2"></div><div class="tier t3"></div></div>
+        <p>لا توجد تأكيدات استلام مسجلة بعد.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB: DISCOUNT ===================== -->
+  <section class="tab-panel" id="tab-discount">
+    <div class="card">
+      <h2 id="discFormTitle">سند تخفيض أسعار جديد</h2>
+      <p class="hint">سجّل الأصناف التي تم تخفيض سعرها، مع السعر السابق والسعر الحالي لكل صنف.</p>
+
+      <div class="field date-field" id="discDateWrap">
+        <label>التاريخ</label>
+        <input type="date" id="discDate">
+      </div>
+
+      <div class="item-row-labels" id="discItemLabels" style="grid-template-columns:1.1fr .5fr .65fr .65fr 1fr auto;">
+        <span>الصنف</span><span>الكمية</span><span>السعر السابق</span><span>السعر الحالي</span><span>ملاحظة</span><span></span>
+      </div>
+      <div id="discItemsWrap"></div>
+      <button class="add-row-btn" id="addDiscItemBtn" type="button">+ إضافة صنف</button>
+
+      <div class="field" style="margin-top:14px;">
+        <label>ملاحظات عامة على السند (اختياري)</label>
+        <textarea id="discNotes" placeholder="أي تفاصيل إضافية عن هذا التخفيض..."></textarea>
+      </div>
+
+      <div class="actions-bar">
+        <button class="btn btn-primary" id="discSaveBtn">💾 حفظ السند</button>
+        <button class="btn btn-ghost" id="discPdfBtn">🖨️ طباعة</button>
+        <button class="btn btn-gold" id="discWaBtn">📤 إرسال واتساب</button>
+        <button class="btn btn-ghost" id="discCancelEditBtn" style="display:none;">إلغاء التعديل</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>سجل سندات التخفيض</h2>
+      <p class="hint">السجلات الخاصة بمستودعك الحالي فقط، محفوظة على هذا الجهاز.</p>
+      <div class="table-wrap">
+        <table class="records" id="discRecordsTable">
+          <thead><tr>
+            <th>رقم السند</th><th>التاريخ</th><th>الأصناف</th><th>الكمية</th><th>ملاحظات</th><th>إجراءات</th>
+          </tr></thead>
+          <tbody id="discRecordsBody"></tbody>
+        </table>
+      </div>
+      <div id="discRecordsEmpty" class="empty-state" style="display:none;">
+        <div class="pyr-mark"><div class="tier t1"></div><div class="tier t2"></div><div class="tier t3"></div></div>
+        <p>لا توجد سندات تخفيض مسجلة بعد.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB: DAMAGED ===================== -->
+  <section class="tab-panel" id="tab-damaged">
+    <div class="card">
+      <h2 id="dmgFormTitle">سند تالف جديد</h2>
+      <p class="hint">سجّل الأصناف التالفة مع الكمية والسعر.</p>
+
+      <div class="field date-field" id="dmgDateWrap">
+        <label>التاريخ</label>
+        <input type="date" id="dmgDate">
+      </div>
+
+      <div class="item-row-labels" id="dmgItemLabels" style="grid-template-columns:1.2fr .55fr .7fr 1fr auto;">
+        <span>الصنف</span><span>الكمية</span><span>السعر</span><span>ملاحظة</span><span></span>
+      </div>
+      <div id="dmgItemsWrap"></div>
+      <button class="add-row-btn" id="addDmgItemBtn" type="button">+ إضافة صنف</button>
+
+      <div class="field" style="margin-top:14px;">
+        <label>ملاحظات عامة على السند (اختياري)</label>
+        <textarea id="dmgNotes" placeholder="أي تفاصيل إضافية عن هذا التالف..."></textarea>
+      </div>
+
+      <div class="actions-bar">
+        <button class="btn btn-primary" id="dmgSaveBtn">💾 حفظ السند</button>
+        <button class="btn btn-ghost" id="dmgPdfBtn">🖨️ طباعة</button>
+        <button class="btn btn-gold" id="dmgWaBtn">📤 إرسال واتساب</button>
+        <button class="btn btn-ghost" id="dmgCancelEditBtn" style="display:none;">إلغاء التعديل</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>سجل سندات التالف</h2>
+      <p class="hint">السجلات الخاصة بمستودعك الحالي فقط، محفوظة على هذا الجهاز.</p>
+      <div class="table-wrap">
+        <table class="records" id="dmgRecordsTable">
+          <thead><tr>
+            <th>رقم السند</th><th>التاريخ</th><th>الأصناف</th><th>الكمية</th><th>القيمة (ر.س)</th><th>ملاحظات</th><th>إجراءات</th>
+          </tr></thead>
+          <tbody id="dmgRecordsBody"></tbody>
+        </table>
+      </div>
+      <div id="dmgRecordsEmpty" class="empty-state" style="display:none;">
+        <div class="pyr-mark"><div class="tier t1"></div><div class="tier t2"></div><div class="tier t3"></div></div>
+        <p>لا توجد سندات تالف مسجلة بعد.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB: RETURN TO MERCHANT ===================== -->
+  <section class="tab-panel" id="tab-return">
+    <div class="card">
+      <h2 id="retFormTitle">سند مرتجع لتاجر جديد</h2>
+      <p class="hint">سجّل الأصناف المرتجعة لمورد/تاجر. الإجمالي قبل الضريبة والضريبة المضافة (15%) يُحسبان تلقائيًا لكل صنف بناءً على سعر الشراء.</p>
+
+      <div class="row2">
+        <div class="field">
+          <label>اسم الفرع</label>
+          <input type="text" id="retBranchDisplay" disabled>
+        </div>
+        <div class="field">
+          <label>اسم المورد</label>
+          <input type="text" id="retSupplierName" placeholder="اسم المورد / التاجر">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>رقم فاتورة المورد (اختياري)</label>
+          <input type="text" id="retSupplierInvoice" placeholder="رقم الفاتورة كما هو مكتوب">
+        </div>
+        <div class="field date-field" style="max-width:none;">
+          <label>التاريخ</label>
+          <input type="date" id="retDate">
+        </div>
+      </div>
+
+      <div class="item-row-labels" id="retItemLabels" style="grid-template-columns:1.2fr .5fr .7fr .7fr auto;">
+        <span>الصنف</span><span>الكمية</span><span>سعر البيع</span><span>سعر الشراء</span><span></span>
+      </div>
+      <div id="retItemsWrap"></div>
+      <button class="add-row-btn" id="addRetItemBtn" type="button">+ إضافة صنف</button>
+
+      <div class="field" style="margin-top:14px;">
+        <label>ملاحظات عامة على السند (اختياري)</label>
+        <textarea id="retNotes" placeholder="أي تفاصيل إضافية عن هذا المرتجع..."></textarea>
+      </div>
+
+      <div class="actions-bar">
+        <button class="btn btn-primary" id="retSaveBtn">💾 حفظ السند</button>
+        <button class="btn btn-ghost" id="retPdfBtn">🖨️ طباعة</button>
+        <button class="btn btn-gold" id="retWaBtn">📤 إرسال واتساب</button>
+        <button class="btn btn-ghost" id="retCancelEditBtn" style="display:none;">إلغاء التعديل</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>سجل سندات المرتجع لتاجر</h2>
+      <p class="hint">السجلات الخاصة بمستودعك الحالي فقط، محفوظة على هذا الجهاز.</p>
+      <div class="table-wrap">
+        <table class="records" id="retRecordsTable">
+          <thead><tr>
+            <th>رقم السند</th><th>التاريخ</th><th>المورد</th><th>الأصناف</th><th>الإجمالي شامل الضريبة (ر.س)</th><th>ملاحظات</th><th>إجراءات</th>
+          </tr></thead>
+          <tbody id="retRecordsBody"></tbody>
+        </table>
+      </div>
+      <div id="retRecordsEmpty" class="empty-state" style="display:none;">
+        <div class="pyr-mark"><div class="tier t1"></div><div class="tier t2"></div><div class="tier t3"></div></div>
+        <p>لا توجد سندات مرتجع مسجلة بعد.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB: BACKUP ===================== -->
+  <section class="tab-panel" id="tab-backup">
+    <div class="card">
+      <h2>النسخ الاحتياطي</h2>
+      <p class="hint">البيانات محفوظة داخل متصفح هذا الجهاز فقط. يُنصح بأخذ نسخة احتياطية دوريًا لتجنب فقدان السجلات.</p>
+      <div class="actions-bar" style="margin-top:0;padding-top:0;border-top:none;">
+        <button class="btn btn-primary" id="exportBtn">⬇️ تصدير نسخة احتياطية (JSON)</button>
+        <button class="btn btn-ghost" id="importBtnTrigger">⬆️ استيراد نسخة احتياطية</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none;">
+      </div>
+    </div>
+    <div class="card">
+      <h2>هوية الجهاز</h2>
+      <p class="hint">المستودع الحالي: <b id="currentWhLabel"></b></p>
+      <div class="actions-bar" style="margin-top:0;padding-top:0;border-top:none;">
+        <button class="btn btn-ghost" id="changeWhBtn">تغيير المستودع المرتبط بهذا الجهاز</button>
+        <button class="btn btn-ghost" id="changePwBtn">تغيير كلمة سر الحماية</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>صفة "المستودع الرئيسي"</h2>
+      <p class="hint" id="dualMainHint"></p>
+      <div class="actions-bar" style="margin-top:0;padding-top:0;border-top:none;">
+        <button class="btn btn-primary" id="dualMainToggleBtn"></button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>إدارة المستودعات والفروع</h2>
+      <p class="hint">المستودعات والفروع الظاهرة عند إعداد جهاز جديد وعند اختيار وجهة تحويل. أضف فرعًا جديدًا ليصبح متاحًا فورًا في هذا الجهاز، وفي أي جهاز آخر يستورد نفس النسخة الاحتياطية.</p>
+      <div class="add-cat-row">
+        <div class="field"><label>اسم المستودع أو الفرع الجديد</label><input type="text" id="newWarehouseInput" placeholder="مثال: فرع الدمام"></div>
+        <div class="field"><label>هاتف واتساب (اختياري)</label><input type="text" id="newWarehousePhoneInput" placeholder="9665XXXXXXXX"></div>
+        <button class="btn btn-primary" id="addWarehouseBtn" type="button">+ إضافة</button>
+      </div>
+      <div class="cat-chip-wrap" id="warehousesList"></div>
+    </div>
+    <div class="card">
+      <h2>إدارة الأصناف</h2>
+      <p class="hint">الأصناف الظاهرة عند إدخال سند تحويل جديد. أضف صنفًا هنا ليظهر مباشرة في قائمة الاختيار بصفحة "تحويل جديد".</p>
+      <div class="add-cat-row">
+        <div class="field"><label>صنف جديد</label><input type="text" id="newCategoryInput" placeholder="مثال: مستلزمات منزلية"></div>
+        <button class="btn btn-primary" id="addCategoryBtn" type="button">+ إضافة</button>
+      </div>
+      <div class="cat-chip-wrap" id="categoriesList"></div>
+    </div>
+    <div class="card danger-zone">
+      <h2>منطقة الحذف</h2>
+      <p class="hint">حذف كل سجلات المستودع الحالي على هذا الجهاز نهائيًا، وإعادة البرنامج لشاشة اختيار المستودع من جديد (كأنه فُتح لأول مرة). لا يمكن التراجع، ولا يُستخدم هذا الخيار لمجرد تصحيح اسم مستودع (استخدم زر ✏️ بجانب اسم المستودع في قسم "المستودعات والفروع" أعلاه لذلك). يُفضل أخذ نسخة احتياطية أولًا.</p>
+      <div class="actions-bar" style="margin-top:0;padding-top:0;border-top:none;">
+        <button class="btn btn-danger" id="wipeBtn">حذف سجلات هذا المستودع</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div id="printArea"></div>
+<div class="toast" id="toast"></div>
+
+<footer class="support-bar">
+  <span>🛠️ الدعم الفني: <b>م. صلاح غالب</b></span>
+  <a href="tel:0556321436">0556321436</a>
+</footer>
+
+<script>
+(function(){
+"use strict";
+
+/* ================= DATA ================= */
+var DEFAULT_CATEGORIES = ["نسائي","رجالي","ولادي","بناتي","مواليد","كماليات","أحذية","شنط","ألعاب","الداخلي"];
+var CATEGORIES = DEFAULT_CATEGORIES.slice();
+
+function loadCategories(){
+  try{
+    var saved = JSON.parse(localStorage.getItem('awt_categories')||'null');
+    CATEGORIES = (saved && saved.length) ? saved : DEFAULT_CATEGORIES.slice();
+  }catch(e){ CATEGORIES = DEFAULT_CATEGORIES.slice(); }
+  // ترحيل: إضافة صنف "الداخلي" تلقائيًا للأجهزة القديمة التي لا تحتوي عليه ضمن قائمتها المحفوظة
+  if(CATEGORIES.indexOf('الداخلي') === -1){
+    CATEGORIES.push('الداخلي');
+    saveCategories();
+  }
+}
+function saveCategories(){ localStorage.setItem('awt_categories', JSON.stringify(CATEGORIES)); }
+
+var DEFAULT_WAREHOUSES = {
+  MAIN: {name:"المستودع الرئيسي", short:"الرئيسي"},
+  QRY:  {name:"مستودع القريات", short:"القريات"},
+  TBR:  {name:"مستودع طبرجل", short:"طبرجل"},
+  SKK:  {name:"مستودع سكاكا", short:"سكاكا"},
+  HAIL: {name:"مستودع حائل", short:"حائل"},
+  ARAR: {name:"مستودع عرعر", short:"عرعر"},
+  NJRN: {name:"مستودع نجران", short:"نجران"},
+  RFH:  {name:"مستودع رفحاء", short:"رفحاء"},
+  SHRR: {name:"مستودع شرورة", short:"شرورة"},
+  TRF:  {name:"مستودع طريف", short:"طريف"},
+  JDH:  {name:"مستودع جدة", short:"جدة"}
+};
+// أسماء قديمة كانت تُستخدم سابقًا، لترحيل أي جهاز محفوظ عليها تلقائيًا إلى التسمية الجديدة
+var OLD_DEFAULT_NAMES = {
+  MAIN: "المستودع الرئيسي",
+  QRY:  "فرع القريات",
+  TBR:  "طبرجل",
+  SKK:  "سكاكا",
+  HAIL: "حائل",
+  ARAR: "عرعر",
+  NJRN: "نجران",
+  RFH:  "رفحاء",
+  SHRR: "شرورة",
+  TRF:  "طريف",
+  JDH:  "جدة"
+};
+var DEFAULT_SETUP_CHOICES = ["QRY","TBR","SKK","HAIL","ARAR","NJRN","RFH","SHRR","TRF","JDH"];
+
+var WAREHOUSES = {};
+var SETUP_CHOICES = [];
+
+function loadWarehouses(){
+  try{
+    var savedW = JSON.parse(localStorage.getItem('awt_warehouses')||'null');
+    var savedC = JSON.parse(localStorage.getItem('awt_setup_choices')||'null');
+    WAREHOUSES = (savedW && Object.keys(savedW).length) ? savedW : JSON.parse(JSON.stringify(DEFAULT_WAREHOUSES));
+    SETUP_CHOICES = (savedC && savedC.length) ? savedC : DEFAULT_SETUP_CHOICES.slice();
+    migrateOldWarehouseNames();
+  }catch(e){
+    WAREHOUSES = JSON.parse(JSON.stringify(DEFAULT_WAREHOUSES));
+    SETUP_CHOICES = DEFAULT_SETUP_CHOICES.slice();
+  }
+}
+function migrateOldWarehouseNames(){
+  // إذا كان الجهاز محفوظًا مسبقًا باسم افتراضي قديم (مثل "فرع القريات")، حدّثه تلقائيًا للتسمية الجديدة "مستودع القريات"
+  var changed = false;
+  Object.keys(OLD_DEFAULT_NAMES).forEach(function(key){
+    if(WAREHOUSES[key] && WAREHOUSES[key].name === OLD_DEFAULT_NAMES[key] && DEFAULT_WAREHOUSES[key]){
+      WAREHOUSES[key].name = DEFAULT_WAREHOUSES[key].name;
+      changed = true;
+    }
+  });
+  if(changed) saveWarehouses();
+}
+function saveWarehouses(){
+  localStorage.setItem('awt_warehouses', JSON.stringify(WAREHOUSES));
+  localStorage.setItem('awt_setup_choices', JSON.stringify(SETUP_CHOICES));
+}
+function genWarehouseKey(){
+  var key;
+  do{ key = 'BR' + Date.now().toString(36).toUpperCase() + Math.floor(Math.random()*90+10); }while(WAREHOUSES[key]);
+  return key;
+}
+function whName(key){ return (WAREHOUSES[key] && WAREHOUSES[key].name) || 'مستودع محذوف'; }
+function whShort(key){ return (WAREHOUSES[key] && WAREHOUSES[key].short) || 'محذوف'; }
+
+/* ================= STATE ================= */
+var setup = null;          // {branch:'QRY', mode:'QRY'|'MAIN'}
+var editingId = null;      // record id currently being edited, or null
+var destSeq = 0, itemSeq = 0;
+
+function isMobileDevice(){
+  return /Android|iPhone|iPad|iPod|Mobile|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent || '');
+}
+var MOBILE_MODE = isMobileDevice();
+
+function loadSetup(){
+  try{ setup = JSON.parse(localStorage.getItem('awt_setup')||'null'); }catch(e){ setup = null; }
+  if(setup && typeof setup.dualMain === 'undefined'){
+    // ترحيل الأجهزة القديمة: كان القريات فقط يملك صفة الرئيسي، نحافظ على نفس السلوك تلقائيًا
+    setup.dualMain = (setup.branch === 'QRY');
+  }
+}
+function saveSetup(){ localStorage.setItem('awt_setup', JSON.stringify(setup)); }
+
+function activeProfile(){ return setup ? setup.mode : null; }
+
+/* ---- password protection ---- */
+function hasPassword(){ return !!localStorage.getItem('awt_password'); }
+function setStoredPassword(pw){ localStorage.setItem('awt_password', pw); }
+function checkStoredPassword(pw){ return hasPassword() && localStorage.getItem('awt_password') === pw; }
+
+var pendingPwCallback = null;
+
+function openPwCreateModal(){
+  document.getElementById('pwCreate1').value = '';
+  document.getElementById('pwCreate2').value = '';
+  document.getElementById('pwCreateError').style.display = 'none';
+  document.getElementById('pwCreateModal').style.display = 'flex';
+}
+document.getElementById('pwCreateSaveBtn').addEventListener('click', function(){
+  var p1 = document.getElementById('pwCreate1').value;
+  var p2 = document.getElementById('pwCreate2').value;
+  if(p1.length < 4 || p1 !== p2){
+    document.getElementById('pwCreateError').style.display = 'block';
+    return;
+  }
+  setStoredPassword(p1);
+  document.getElementById('pwCreateModal').style.display = 'none';
+  toast('تم تعيين كلمة السر بنجاح');
+  renderAll();
+});
+
+function requirePassword(onSuccess, message){
+  if(!hasPassword()){
+    // safety net: force creating a password before allowing the destructive action
+    pendingPwCallback = onSuccess;
+    openPwCreateModal();
+    return;
+  }
+  pendingPwCallback = onSuccess;
+  document.getElementById('pwVerifyInput').value = '';
+  document.getElementById('pwVerifyError').style.display = 'none';
+  document.getElementById('pwVerifyMsg').textContent = message || 'هذه العملية تتطلب إدخال كلمة سر الحماية للمتابعة.';
+  document.getElementById('pwVerifyModal').style.display = 'flex';
+  setTimeout(function(){ document.getElementById('pwVerifyInput').focus(); }, 60);
+}
+document.getElementById('pwVerifyOkBtn').addEventListener('click', function(){
+  var pw = document.getElementById('pwVerifyInput').value;
+  if(!checkStoredPassword(pw)){
+    document.getElementById('pwVerifyError').style.display = 'block';
+    return;
+  }
+  document.getElementById('pwVerifyModal').style.display = 'none';
+  var cb = pendingPwCallback; pendingPwCallback = null;
+  if(cb) cb();
+});
+document.getElementById('pwVerifyCancelBtn').addEventListener('click', function(){
+  document.getElementById('pwVerifyModal').style.display = 'none';
+  pendingPwCallback = null;
+});
+document.getElementById('pwVerifyInput').addEventListener('keydown', function(e){
+  if(e.key === 'Enter') document.getElementById('pwVerifyOkBtn').click();
+});
+
+document.getElementById('changePwBtn').addEventListener('click', function(){
+  document.getElementById('pwChangeOld').value = '';
+  document.getElementById('pwChangeNew1').value = '';
+  document.getElementById('pwChangeNew2').value = '';
+  document.getElementById('pwChangeError').style.display = 'none';
+  document.getElementById('pwChangeModal').style.display = 'flex';
+});
+document.getElementById('pwChangeCancelBtn').addEventListener('click', function(){
+  document.getElementById('pwChangeModal').style.display = 'none';
+});
+document.getElementById('pwChangeSaveBtn').addEventListener('click', function(){
+  var oldPw = document.getElementById('pwChangeOld').value;
+  var n1 = document.getElementById('pwChangeNew1').value;
+  var n2 = document.getElementById('pwChangeNew2').value;
+  var errEl = document.getElementById('pwChangeError');
+  if(!checkStoredPassword(oldPw)){
+    errEl.textContent = 'كلمة السر الحالية غير صحيحة';
+    errEl.style.display = 'block';
+    return;
+  }
+  if(n1.length < 4 || n1 !== n2){
+    errEl.textContent = 'كلمة السر الجديدة غير متطابقة أو قصيرة جدًا';
+    errEl.style.display = 'block';
+    return;
+  }
+  setStoredPassword(n1);
+  document.getElementById('pwChangeModal').style.display = 'none';
+  toast('تم تغيير كلمة السر بنجاح');
+});
+
+function recordsKey(p){ return 'awt_records_'+p; }
+function counterKey(p){ return 'awt_counter_'+p; }
+
+function loadRecords(p){
+  try{ return JSON.parse(localStorage.getItem(recordsKey(p))||'[]'); }catch(e){ return []; }
+}
+function saveRecords(p, arr){ localStorage.setItem(recordsKey(p), JSON.stringify(arr)); }
+
+function nextVoucherNo(p){
+  var n = parseInt(localStorage.getItem(counterKey(p))||'0',10) + 1;
+  localStorage.setItem(counterKey(p), String(n));
+  return p + '-' + String(n).padStart(5,'0');
+}
+
+function uid(){ return 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+function todayStr(){
+  var d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function fmtDate(iso){
+  var p = iso.split('-'); return p[2]+'/'+p[1]+'/'+p[0];
+}
+function esc(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+function toast(msg){
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._h);
+  toast._h = setTimeout(function(){ t.classList.remove('show'); }, 2600);
+}
+
+/* ================= SETUP FLOW ================= */
+function initSetup(){
+  loadSetup();
+  var modal = document.getElementById('setupModal');
+  if(!setup || !setup.branch){
+    var grid = document.getElementById('branchGrid');
+    grid.innerHTML = '';
+    SETUP_CHOICES.forEach(function(key){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = WAREHOUSES[key].name;
+      b.addEventListener('click', function(){ chooseBranch(key); });
+      grid.appendChild(b);
+    });
+    modal.style.display = 'flex';
+  } else {
+    modal.style.display = 'none';
+    if(!hasPassword()){
+      openPwCreateModal();
+    } else {
+      renderAll();
+    }
+  }
+}
+function chooseBranch(key){
+  var dualMain = document.getElementById('setupDualMainCheckbox').checked;
+  setup = { branch:key, mode:key, dualMain:dualMain };
+  saveSetup();
+  document.getElementById('setupModal').style.display = 'none';
+  toast('تم تعيين هذا الجهاز على: ' + WAREHOUSES[key].name);
+  if(!hasPassword()){
+    openPwCreateModal();
+  } else {
+    renderAll();
+  }
+}
+function toggleMainMode(){
+  if(!setup || !setup.dualMain) return;
+  setup.mode = (setup.mode === setup.branch) ? 'MAIN' : setup.branch;
+  saveSetup();
+  editingId = null;
+  resetForm();
+  renderAll();
+  toast('تم التبديل للعمل بصفة: '+WAREHOUSES[setup.mode].name+' — سجلاتك الآن خاصة بهذا الوضع فقط');
+}
+
+function setDualMain(enabled){
+  if(!setup) return;
+  if(enabled === setup.dualMain) return;
+  if(!enabled && setup.mode === 'MAIN'){
+    // إن كان يعمل حاليًا بصفة الرئيسي وأُلغيت الخاصية، أعده لصفة فرعه الأصلي
+    setup.mode = setup.branch;
+  }
+  setup.dualMain = enabled;
+  saveSetup();
+  renderAll();
+  toast(enabled ? 'تم تفعيل صفة "المستودع الرئيسي" على هذا الجهاز' : 'تم إلغاء صفة "المستودع الرئيسي" عن هذا الجهاز');
+}
+function changeWarehouse(){
+  if(!confirm('سيتم إلغاء ربط هذا الجهاز بالمستودع الحالي. بياناته المحفوظة تبقى محفوظة ولن تُحذف. هل تريد المتابعة؟')) return;
+  setup = null;
+  localStorage.removeItem('awt_setup');
+  initSetup();
+}
+
+/* ================= HEADER RENDER ================= */
+function renderHeader(){
+  var toggleWrap = document.getElementById('headerToggle');
+  var statusText = document.getElementById('statusText');
+  toggleWrap.innerHTML = '';
+  var profile = activeProfile();
+  if(!profile){ statusText.textContent = ''; return; }
+
+  statusText.textContent = 'تعمل الآن في: ' + whName(profile);
+
+  if(setup.dualMain){
+    var tg = document.createElement('div');
+    tg.className = 'toggle-mode';
+    var b1 = document.createElement('button'); b1.textContent = whShort(setup.branch);
+    var b2 = document.createElement('button'); b2.textContent = whShort('MAIN');
+    b1.className = setup.mode===setup.branch ? 'active':'';
+    b2.className = setup.mode==='MAIN' ? 'active':'';
+    b1.addEventListener('click', function(){ if(setup.mode!==setup.branch) toggleMainMode(); });
+    b2.addEventListener('click', function(){ if(setup.mode!=='MAIN') toggleMainMode(); });
+    tg.appendChild(b1); tg.appendChild(b2);
+    toggleWrap.appendChild(tg);
+  }
+}
+document.getElementById('gearBtn').addEventListener('click', function(){ activateTab('backup'); });
+
+/* ================= TABS ================= */
+function activateTab(name){
+  document.querySelectorAll('nav.tabs button').forEach(function(b){
+    b.classList.toggle('active', b.dataset.tab === name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(function(p){
+    p.classList.toggle('active', p.id === 'tab-'+name);
+  });
+  if(name === 'records') renderRecords();
+  if(name === 'confirm') renderConfirmTab();
+  if(name === 'discount') renderDiscRecords();
+  if(name === 'damaged') renderDmgRecords();
+  if(name === 'return') renderRetRecords();
+  if(name === 'backup') renderBackupTab();
+}
+document.querySelectorAll('nav.tabs button').forEach(function(b){
+  b.addEventListener('click', function(){ activateTab(b.dataset.tab); });
+});
+
+/* ================= FORM: DESTINATIONS ================= */
+function destinationOptions(selected){
+  var profile = activeProfile();
+  var html = '<option value="">اختر المستودع...</option>';
+  Object.keys(WAREHOUSES).forEach(function(key){
+    if(key === profile) return;
+    html += '<option value="'+key+'"'+(key===selected?' selected':'')+'>'+esc(WAREHOUSES[key].name)+'</option>';
+  });
+  return html;
+}
+
+function relocateDateField(){
+  var dateWrap = document.getElementById('dateFieldWrap');
+  var firstBlock = document.querySelector('#destinationsWrap .dest-block');
+  if(!dateWrap || !firstBlock) return;
+  var destTop = firstBlock.querySelector('.dest-top');
+  if(destTop && dateWrap.parentNode !== destTop){
+    destTop.appendChild(dateWrap);
+  }
+}
+
+function clearDestinationsWrap(){
+  var wrap = document.getElementById('destinationsWrap');
+  var dateWrap = document.getElementById('dateFieldWrap');
+  if(dateWrap && wrap.contains(dateWrap)){
+    // انقل حقل التاريخ خارج الحاوية قبل مسحها كي لا يُحذف مع بقية العناصر
+    wrap.parentNode.insertBefore(dateWrap, wrap);
+  }
+  wrap.innerHTML = '';
+}
+
+function addDestinationBlock(prefill){
+  destSeq++;
+  var id = 'd'+destSeq;
+  var wrap = document.getElementById('destinationsWrap');
+  var block = document.createElement('div');
+  block.className = 'dest-block';
+  block.dataset.id = id;
+  block.innerHTML =
+    '<div class="dest-top">' +
+      '<div class="field"><label>الوجهة (إلى مستودع)</label>' +
+        '<select class="dest-select">'+destinationOptions(prefill?prefill.to:null)+'</select>' +
+      '</div>' +
+    '</div>' +
+    '<button type="button" class="remove-dest">إزالة الوجهة</button>' +
+    '<div class="items-wrap">' +
+      '<div class="item-row-labels">' +
+        '<span>الصنف</span><span>الكمية</span><span>السعر (ر.س)</span><span>ملاحظة</span><span></span>' +
+      '</div>' +
+    '</div>' +
+    '<button type="button" class="add-row-btn">+ إضافة صنف</button>';
+  wrap.appendChild(block);
+  relocateDateField();
+
+  block.querySelector('.remove-dest').addEventListener('click', function(){
+    if(wrap.children.length <= 1){ toast('يجب أن توجد وجهة واحدة على الأقل'); return; }
+    block.remove();
+    relocateDateField();
+  });
+  block.querySelector('.add-row-btn').addEventListener('click', function(){
+    addItemRow(block);
+  });
+
+  if(prefill && prefill.items && prefill.items.length){
+    prefill.items.forEach(function(it){ addItemRow(block, it); });
+  } else {
+    addItemRow(block);
+  }
+  return block;
+}
+
+function addItemRow(block, prefill){
+  itemSeq++;
+  var wrap = block.querySelector('.items-wrap');
+  var row = document.createElement('div');
+  row.className = 'item-row';
+  var catOpts = '<option value="">اختر الصنف...</option>' + CATEGORIES.map(function(c){
+    return '<option value="'+esc(c)+'"'+(prefill&&prefill.category===c?' selected':'')+'>'+esc(c)+'</option>';
+  }).join('');
+  row.innerHTML =
+    '<div class="item-field"><label class="mobile-label">الصنف</label>' +
+      '<select class="item-cat">'+catOpts+'</select></div>' +
+    '<div class="item-field"><label class="mobile-label">الكمية</label>' +
+      '<input type="number" class="item-qty" min="1" placeholder="الكمية" value="'+(prefill?prefill.qty:'')+'"></div>' +
+    '<div class="item-field"><label class="mobile-label">السعر (ر.س)</label>' +
+      '<input type="number" class="item-price" min="0" step="0.01" placeholder="السعر" value="'+(prefill&&prefill.price!=null?prefill.price:'')+'"></div>' +
+    '<div class="item-field"><label class="mobile-label">ملاحظة</label>' +
+      '<input type="text" class="item-note" placeholder="ملاحظة (اختياري)" value="'+esc(prefill?prefill.note:'')+'"></div>' +
+    '<button type="button" class="del-row" title="حذف الصنف">✕<span class="del-row-text"> حذف الصنف</span></button>';
+  wrap.appendChild(row);
+  row.querySelector('.del-row').addEventListener('click', function(){
+    var items = wrap.querySelectorAll('.item-row');
+    if(items.length <= 1){ toast('يجب أن يوجد صنف واحد على الأقل'); return; }
+    row.remove();
+  });
+}
+
+document.getElementById('addDestBtn').addEventListener('click', function(){ addDestinationBlock(); });
+
+function resetForm(){
+  editingId = null;
+  document.getElementById('transferDate').value = todayStr();
+  document.getElementById('generalNotes').value = '';
+  clearDestinationsWrap();
+  addDestinationBlock();
+  document.getElementById('formTitle').textContent = 'سند تحويل بضاعة جديد';
+  document.getElementById('cancelEditBtn').style.display = 'none';
+}
+
+function collectFormBlocks(){
+  var blocks = [];
+  document.querySelectorAll('.dest-block').forEach(function(block){
+    var to = block.querySelector('.dest-select').value;
+    var items = [];
+    block.querySelectorAll('.item-row').forEach(function(row){
+      var cat = row.querySelector('.item-cat').value;
+      var qty = parseInt(row.querySelector('.item-qty').value, 10);
+      var price = parseFloat(row.querySelector('.item-price').value);
+      var unit = 'piece';
+      var note = row.querySelector('.item-note').value.trim();
+      if(cat && qty > 0 && price >= 0 && !isNaN(price)) items.push({category:cat, qty:qty, price:price, unit:unit, note:note});
+    });
+    if(to && items.length) blocks.push({to:to, items:items});
+  });
+  return blocks;
+}
+
+/* ================= SAVE ================= */
+function persistForm(){
+  var profile = activeProfile();
+  var date = document.getElementById('transferDate').value || todayStr();
+  var notes = document.getElementById('generalNotes').value.trim();
+  var blocks = collectFormBlocks();
+  if(!blocks.length){
+    toast('الرجاء اختيار وجهة واحدة على الأقل وإضافة صنف بكمية وسعر صحيحين');
+    return null;
+  }
+
+  var records = loadRecords(profile);
+  var created = [];
+
+  if(editingId){
+    // editing an existing single-destination record
+    var idx = records.findIndex(function(r){ return r.id === editingId; });
+    if(idx > -1){
+      var b = blocks[0];
+      records[idx].date = date;
+      records[idx].to = b.to;
+      records[idx].items = b.items;
+      records[idx].notes = notes;
+      records[idx].editedAt = new Date().toISOString();
+      created.push(records[idx]);
+    }
+  } else {
+    blocks.forEach(function(b){
+      var rec = {
+        id: uid(),
+        voucherNo: nextVoucherNo(profile),
+        date: date,
+        from: profile,
+        to: b.to,
+        items: b.items,
+        notes: notes,
+        createdAt: new Date().toISOString(),
+        editedAt: null
+      };
+      records.push(rec);
+      created.push(rec);
+    });
+  }
+
+  saveRecords(profile, records);
+  return created;
+}
+
+document.getElementById('saveBtn').addEventListener('click', function(){
+  var created = persistForm();
+  if(!created) return;
+  toast(editingId ? 'تم تحديث السند بنجاح' : 'تم حفظ '+created.length+' سند بنجاح');
+  resetForm();
+  renderAll();
+  activateTab('records');
+});
+
+document.getElementById('cancelEditBtn').addEventListener('click', function(){
+  resetForm();
+});
+
+/* ================= WHATSAPP TEXT MESSAGE (بديل موثوق على الهاتف) ================= */
+function buildVoucherMessage(rec){
+  var profile = activeProfile();
+  var displayItems = mergeItemsForDisplay(rec.items);
+  var lines = [];
+  lines.push('سند نقل بضاعة بين المخازن — أصالة الهرم');
+  lines.push('رقم السند: '+rec.voucherNo);
+  lines.push('من: '+whName(profile)+'  إلى: '+whName(rec.to));
+  lines.push('التاريخ: '+fmtDate(rec.date));
+  lines.push('');
+  displayItems.forEach(function(it){
+    var lineTotal = it.price * it.qty;
+    lines.push('- '+it.category+': '+it.qty+' '+unitLabel(it.unit)+' × '+money(it.price)+' = '+money(lineTotal)+' ر.س'+(it.note?(' ('+it.note+')'):''));
+  });
+  var totalQty = displayItems.reduce(function(s,it){ return s+Number(it.qty||0); },0);
+  var totalValue = displayItems.reduce(function(s,it){ return s+(it.price*it.qty); },0);
+  lines.push('');
+  lines.push('الإجمالي: '+totalQty+' قطعة بقيمة '+money(totalValue)+' ر.س');
+  if(rec.notes) lines.push('ملاحظات: '+rec.notes);
+  return lines.join('\n');
+}
+
+function sendVoucherWhatsapp(records){
+  if(!records.length){ toast('لا يوجد سند لإرساله'); return; }
+  var msg = records.map(buildVoucherMessage).join('\n\n—————\n\n');
+  var phone = (records.length === 1 && WAREHOUSES[records[0].to] && WAREHOUSES[records[0].to].phone) ? WAREHOUSES[records[0].to].phone : '';
+  var url = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+  toast(phone ? 'جاري فتح واتساب لإرسال السند إلى '+whName(records[0].to) : 'جاري فتح واتساب، اختر جهة الإرسال يدويًا');
+  setTimeout(function(){ window.open(url, '_blank'); }, 400);
+}
+
+/* ================= PRINT / PDF ================= */
+function mergeItemsForDisplay(items){
+  var groups = {}, order = [];
+  items.forEach(function(it){
+    var priceKey = Number(it.price||0).toFixed(2);
+    var unit = it.unit || 'piece';
+    var key = it.category + '|' + priceKey + '|' + unit;
+    if(!groups[key]){
+      groups[key] = {category:it.category, price:Number(it.price||0), unit:unit, qty:0, notes:[], count:0};
+      order.push(key);
+    }
+    groups[key].qty += Number(it.qty||0);
+    groups[key].count += 1;
+    if(it.note) groups[key].notes.push(it.note);
+  });
+  return order.map(function(key){
+    var g = groups[key];
+    return {category:g.category, price:g.price, unit:g.unit, qty:g.qty, note:g.notes.join('، '), merged:g.count>1, mergedCount:g.count};
+  });
+}
+function money(n){ return Number(n||0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function unitLabel(u){ return u === 'dozen' ? 'درزن' : 'حبة'; }
+
+function voucherHTML(rec){
+  var profile = activeProfile();
+  var displayItems = mergeItemsForDisplay(rec.items);
+  var itemsRows = displayItems.map(function(it, i){
+    var mergedBadge = it.merged ? ' <span class="merge-badge" title="تم دمج '+it.mergedCount+' إدخالات لنفس الصنف والسعر والوحدة">🔗×'+it.mergedCount+'</span>' : '';
+    var lineTotal = it.price * it.qty;
+    return '<tr><td>'+(i+1)+'</td><td>'+esc(it.category)+'</td><td>'+esc(it.qty)+' '+unitLabel(it.unit)+mergedBadge+'</td><td>'+money(it.price)+' / ريال</td><td>'+money(lineTotal)+'</td><td>'+esc(it.note||'—')+'</td></tr>';
+  }).join('');
+  var totalQty = displayItems.reduce(function(s,it){ return s+Number(it.qty||0); },0);
+  var totalValue = displayItems.reduce(function(s,it){ return s+(it.price*it.qty); },0);
+  var anyMerged = displayItems.some(function(it){ return it.merged; });
+  var editedNote = rec.editedAt ? ('<span>(تم التعديل بتاريخ '+esc(rec.editedAt.slice(0,10))+')</span>') : '';
+  return (
+    '<div class="voucher-page">' +
+      '<div class="v-head">' +
+        '<div class="v-brand">' +
+          '<div class="pyr-mark"><div class="tier t1"></div><div class="tier t2"></div><div class="tier t3"></div></div>' +
+          '<div><h2>أصالة الهرم</h2><p>نظام التحويلات المخزنية بين الفروع</p></div>' +
+        '</div>' +
+        '<div style="text-align:left;font-size:11px;color:#5C6459;">رقم السند<br><b style="font-size:14px;color:#16302B;">'+esc(rec.voucherNo)+'</b></div>' +
+      '</div>' +
+      '<div class="v-title">سند نقل بضاعة بين المخازن</div>' +
+      '<div class="v-meta">' +
+        '<div><b>التاريخ</b>'+fmtDate(rec.date)+'</div>' +
+        '<div><b>حالة السند</b>'+(rec.editedAt?'معدَّل '+editedNote:'أصلي')+'</div>' +
+      '</div>' +
+      '<div class="v-route">' +
+        '<div class="box">'+esc(whName(rec.from))+'</div>' +
+        '<div class="arrow">⟵</div>' +
+        '<div class="box">'+esc(whName(rec.to))+'</div>' +
+      '</div>' +
+      '<table class="v-table"><thead><tr><th>م</th><th>الصنف</th><th>الكمية</th><th>السعر</th><th>القيمة</th><th>ملاحظات</th></tr></thead>' +
+      '<tbody>'+itemsRows+'<tr><td colspan="2">الإجمالي</td><td>'+totalQty+'</td><td></td><td>'+money(totalValue)+'</td><td></td></tr></tbody></table>' +
+      '<div class="v-merge-hint">'+(anyMerged?'🔗 يشير هذا الرمز إلى دمج عدة إدخالات لنفس الصنف والسعر في قيمة واحدة.':'')+'</div>' +
+      (rec.notes ? '<div class="v-notes"><b>ملاحظات عامة:</b> '+esc(rec.notes)+'</div>' : '') +
+      '<div class="v-sign">' +
+        '<div>توقيع المُسلِّم<div class="line">الاسم / التوقيع</div></div>' +
+        '<div>توقيع المستلم<div class="line">الاسم / التوقيع</div></div>' +
+      '</div>' +
+      '<div class="v-foot"><span>الدعم الفني: م. صلاح غالب — 0556321436</span><span>صادر من: '+esc(WAREHOUSES[profile].name)+'</span></div>' +
+    '</div>'
+  );
+}
+
+function buildPrintArea(records){
+  var area = document.getElementById('printArea');
+  area.innerHTML = records.map(voucherHTML).join('');
+  return area;
+}
+
+function doPrint(records){
+  if(!records.length){ toast('لا يوجد سند لطباعته'); return; }
+  buildPrintArea(records);
+  setTimeout(function(){ window.print(); }, 80);
+}
+
+function resetFormKeepTab(){
+  editingId = null;
+  document.getElementById('transferDate').value = todayStr();
+  document.getElementById('generalNotes').value = '';
+  clearDestinationsWrap();
+  addDestinationBlock();
+  document.getElementById('formTitle').textContent = 'سند تحويل بضاعة جديد';
+  document.getElementById('cancelEditBtn').style.display = 'none';
+  renderStats();
+}
+
+/* ================= WHATSAPP EXPORT (يرسل ملف PDF حقيقي) ================= */
+function generatePdfBlob(records, htmlFn){
+  return new Promise(function(resolve, reject){
+    if(typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined'){
+      reject(new Error('PDF library not loaded'));
+      return;
+    }
+    var area = document.getElementById('printArea');
+    area.innerHTML = records.map(htmlFn).join('');
+    area.style.display = 'block';
+    area.style.position = 'fixed';
+    area.style.left = '-9999px';
+    area.style.top = '0';
+    area.style.background = '#fff';
+    area.style.width = '740px';   // عرض ثابت بالبكسل يضمن نفس شكل السند على كل الأجهزة (كمبيوتر أو هاتف)
+    area.style.maxWidth = 'none';
+
+    var pages = Array.prototype.slice.call(area.querySelectorAll('.voucher-page'));
+    var jsPDF = window.jspdf.jsPDF;
+    var pdf = new jsPDF('p','mm','a4');
+
+    function cleanup(){
+      area.style.display = 'none';
+      area.style.position = '';
+      area.style.left = '';
+      area.style.top = '';
+      area.style.background = '';
+      area.style.width = '';
+      area.style.maxWidth = '';
+    }
+
+    var A4_W = 210, A4_H = 297; // mm
+    var isFirstPage = true;
+
+    function addCanvasPaginated(canvas){
+      // نسبة البكسل لكل مم بناءً على عرض الصورة الفعلي مقابل عرض صفحة A4 (210مم)
+      var pxPerMm = canvas.width / A4_W;
+      var pageHeightPx = Math.floor(A4_H * pxPerMm);
+
+      if(canvas.height <= pageHeightPx){
+        // السند بالكامل يدخل في صفحة واحدة
+        var img = canvas.toDataURL('image/jpeg', 0.95);
+        var h = canvas.height / pxPerMm;
+        if(!isFirstPage) pdf.addPage();
+        pdf.addImage(img, 'JPEG', 0, 0, A4_W, h);
+        isFirstPage = false;
+        return;
+      }
+
+      // السند أطول من صفحة واحدة: نقسّمه لعدة شرائح بارتفاع صفحة A4 لكل واحدة
+      var remaining = canvas.height;
+      var offsetY = 0;
+      while(remaining > 0){
+        var sliceHeightPx = Math.min(pageHeightPx, remaining);
+        var sliceCanvas = document.createElement('canvas');
+        sliceCanvas.width = canvas.width;
+        sliceCanvas.height = sliceHeightPx;
+        var ctx = sliceCanvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+        ctx.drawImage(canvas, 0, offsetY, canvas.width, sliceHeightPx, 0, 0, canvas.width, sliceHeightPx);
+
+        var sliceImg = sliceCanvas.toDataURL('image/jpeg', 0.95);
+        var sliceHmm = sliceHeightPx / pxPerMm;
+        if(!isFirstPage) pdf.addPage();
+        pdf.addImage(sliceImg, 'JPEG', 0, 0, A4_W, sliceHmm);
+        isFirstPage = false;
+
+        offsetY += sliceHeightPx;
+        remaining -= sliceHeightPx;
+      }
+    }
+
+    function renderPage(i){
+      if(i >= pages.length){
+        cleanup();
+        resolve(pdf.output('blob'));
+        return;
+      }
+      html2canvas(pages[i], {scale:2, useCORS:true, windowWidth:740}).then(function(canvas){
+        addCanvasPaginated(canvas);
+        renderPage(i+1);
+      }).catch(function(err){ cleanup(); reject(err); });
+    }
+    renderPage(0);
+  });
+}
+
+/* ================= ANDROID NATIVE BRIDGE (عند التشغيل داخل تطبيق أندرويد المُغلَّف) ================= */
+// إذا كان التطبيق يعمل داخل غلاف أندرويد (WebView) يوفر واجهة AndroidPdfBridge،
+// نستخدمها لحفظ/فتح/مشاركة ملف PDF بشكل أصلي وموثوق بدل الاعتماد على مشاركة المتصفح فقط.
+function hasAndroidPrintBridge(){
+  return typeof window.AndroidPdfBridge !== 'undefined' && window.AndroidPdfBridge && typeof window.AndroidPdfBridge.printPdfBase64 === 'function';
+}
+function hasAndroidShareBridge(){
+  return typeof window.AndroidPdfBridge !== 'undefined' && window.AndroidPdfBridge && typeof window.AndroidPdfBridge.sharePdfBase64 === 'function';
+}
+// يبقى للتوافق مع أي استخدام قديم
+function hasAndroidPdfBridge(){
+  return hasAndroidPrintBridge() || hasAndroidShareBridge();
+}
+function blobToBase64(blob){
+  return new Promise(function(resolve, reject){
+    var reader = new FileReader();
+    reader.onloadend = function(){
+      // النتيجة على شكل "data:application/pdf;base64,XXXX" — نأخذ الجزء بعد الفاصلة فقط
+      var result = reader.result || '';
+      var idx = result.indexOf(',');
+      resolve(idx > -1 ? result.slice(idx+1) : result);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+function fallbackDownloadPdf(blob, fname, shareText){
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = fname;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+  toast('تم تنزيل ملف PDF، افتح واتساب وأرفقه من التنزيلات');
+  if(shareText){
+    setTimeout(function(){
+      window.open('https://wa.me/?text='+encodeURIComponent(shareText), '_blank');
+    }, 900);
+  }
+}
+
+function viewPdfInBrowser(blob){
+  var url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 60000);
+}
+
+function safeFileName(prefix, id){
+  // اسم ملف بحروف/أرقام لاتينية فقط لتفادي ظهور حروف غير مفهومة في بعض تطبيقات المشاركة على أندرويد
+  var clean = String(id||'').replace(/[^A-Za-z0-9\-]/g, '');
+  return prefix + (clean ? ('-'+clean) : '') + '.pdf';
+}
+
+function shareOrDownloadPdf(records, htmlFn, filenamePrefix, textSummaryFn){
+  toast('جاري تجهيز ملف PDF...');
+  generatePdfBlob(records, htmlFn).then(function(blob){
+    var idPart = records.length>1 ? 'Multi' : (records[0].voucherNo || records[0].id);
+    var fname = safeFileName(filenamePrefix, idPart);
+
+    if(hasAndroidShareBridge()){
+      blobToBase64(blob).then(function(b64){
+        window.AndroidPdfBridge.sharePdfBase64(b64, fname);
+        toast('جاري فتح قائمة المشاركة...');
+      });
+      return;
+    }
+
+    var file = new File([blob], fname, {type:'application/pdf'});
+    var shareText = textSummaryFn ? textSummaryFn(records) : '';
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      navigator.share({files:[file], title:fname, text:shareText}).then(function(){
+        toast('تم فتح قائمة المشاركة، اختر واتساب لإرسال الملف');
+      }).catch(function(err){
+        if(err && err.name === 'AbortError') return;
+        fallbackDownloadPdf(blob, fname, shareText);
+      });
+    } else {
+      fallbackDownloadPdf(blob, fname, shareText);
+    }
+  }).catch(function(){
+    toast('تعذر إنشاء ملف PDF، تحقق من الاتصال بالإنترنت');
+  });
+}
+
+function viewOrDownloadPdf(records, htmlFn, filenamePrefix){
+  if(!records.length){ toast('لا يوجد سند لعرضه'); return; }
+  toast('جاري تجهيز ملف PDF...');
+  generatePdfBlob(records, htmlFn).then(function(blob){
+    var idPart = records.length>1 ? 'Multi' : (records[0].voucherNo || records[0].id);
+    var fname = safeFileName(filenamePrefix, idPart);
+    if(hasAndroidPrintBridge()){
+      blobToBase64(blob).then(function(b64){
+        window.AndroidPdfBridge.printPdfBase64(b64, fname);
+        toast('جاري فتح نافذة الطباعة...');
+      });
+      return;
+    }
+    viewPdfInBrowser(blob);
+  }).catch(function(){
+    toast('تعذر إنشاء ملف PDF، تحقق من الاتصال بالإنترنت');
+  });
+}
+
+function voucherWaSummary(records){
+  return 'سندات تحويل بضاعة - أصالة الهرم:\n' + records.map(function(r){
+    return 'سند '+r.voucherNo+' | من '+whShort(r.from)+' إلى '+whShort(r.to)+' | '+fmtDate(r.date);
+  }).join('\n');
+}
+
+function exportPDFAndShare(records){
+  if(!records.length){ toast('لا يوجد سند لإرساله'); return; }
+  shareOrDownloadPdf(records, voucherHTML, 'AlHaram-Voucher', voucherWaSummary);
+}
+
+document.getElementById('pdfBtn').addEventListener('click', function(){
+  var created = persistForm();
+  if(!created) return;
+  resetFormKeepTab();
+  viewOrDownloadPdf(created, voucherHTML, 'AlHaram-Voucher');
+});
+
+document.getElementById('waBtn').addEventListener('click', function(){
+  var created = persistForm();
+  if(!created) return;
+  resetFormKeepTab();
+  exportPDFAndShare(created);
+});
+
+/* ================= RECORDS TAB ================= */
+function populateWarehouseFilter(){
+  var sel = document.getElementById('fltWarehouse');
+  var profile = activeProfile();
+  var current = sel.value; // احفظ القيمة المختارة حاليًا قبل إعادة بناء القائمة
+  sel.innerHTML = '<option value="">الكل</option>';
+  Object.keys(WAREHOUSES).forEach(function(key){
+    if(key===profile) return;
+    sel.innerHTML += '<option value="'+key+'">'+esc(WAREHOUSES[key].name)+'</option>';
+  });
+  if(current && WAREHOUSES[current]) sel.value = current; // استعد الاختيار بعد إعادة البناء
+}
+
+function renderRecords(){
+  var profile = activeProfile();
+  if(!profile) return;
+  populateWarehouseFilter();
+  var records = loadRecords(profile).slice().sort(function(a,b){
+    return (b.date+b.createdAt) > (a.date+a.createdAt) ? 1 : -1;
+  });
+
+  var from = document.getElementById('fltFrom').value;
+  var to = document.getElementById('fltTo').value;
+  var wh = document.getElementById('fltWarehouse').value;
+  var q = document.getElementById('fltSearch').value.trim().toLowerCase();
+
+  var filtered = records.filter(function(r){
+    if(from && r.date < from) return false;
+    if(to && r.date > to) return false;
+    if(wh && r.to !== wh) return false;
+    if(q && (r.notes||'').toLowerCase().indexOf(q) === -1) return false;
+    return true;
+  });
+
+  var tbody = document.getElementById('recordsBody');
+  tbody.innerHTML = '';
+  document.getElementById('recordsEmpty').style.display = filtered.length ? 'none' : 'block';
+
+  filtered.forEach(function(r){
+    var total = r.items.reduce(function(s,it){ return s+Number(it.qty||0); },0);
+    var totalValue = r.items.reduce(function(s,it){ return s+(Number(it.price||0)*Number(it.qty||0)); },0);
+    var catsText = r.items.map(function(it){ return it.category+' ('+it.qty+' '+unitLabel(it.unit)+'×'+money(it.price)+')'; }).join('، ');
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>'+esc(r.voucherNo)+(r.editedAt?' <span class="badge badge-out">معدَّل</span>':'')+'</td>' +
+      '<td>'+fmtDate(r.date)+'</td>' +
+      '<td>'+esc(whName(r.to))+'</td>' +
+      '<td title="'+esc(catsText)+'">'+esc(catsText.length>28?catsText.slice(0,28)+'…':catsText)+'</td>' +
+      '<td>'+total+'</td>' +
+      '<td>'+money(totalValue)+'</td>' +
+      '<td title="'+esc(r.notes)+'">'+esc((r.notes||'—').slice(0,18))+'</td>' +
+      '<td><div class="row-actions">' +
+        '<button class="mini-btn" data-act="pdf" data-id="'+r.id+'">طباعة</button>' +
+        '<button class="mini-btn" data-act="wa" data-id="'+r.id+'">واتساب</button>' +
+        '<button class="mini-btn" data-act="edit" data-id="'+r.id+'">تعديل</button>' +
+        '<button class="mini-btn danger" data-act="del" data-id="'+r.id+'">حذف</button>' +
+      '</div></td>';
+    tbody.appendChild(tr);
+  });
+}
+
+document.getElementById('recordsBody').addEventListener('click', function(e){
+  var btn = e.target.closest('button[data-act]');
+  if(!btn) return;
+  var id = btn.dataset.id, act = btn.dataset.act;
+  var profile = activeProfile();
+  var records = loadRecords(profile);
+  var rec = records.find(function(r){ return r.id === id; });
+  if(!rec) return;
+
+  if(act === 'pdf'){ viewOrDownloadPdf([rec], voucherHTML, 'AlHaram-Voucher'); }
+  else if(act === 'wa'){ exportPDFAndShare([rec]); }
+  else if(act === 'edit'){
+    editingId = id;
+    document.getElementById('transferDate').value = rec.date;
+    document.getElementById('generalNotes').value = rec.notes || '';
+    clearDestinationsWrap();
+    addDestinationBlock({to:rec.to, items:rec.items});
+    document.getElementById('formTitle').textContent = 'تعديل السند رقم '+rec.voucherNo;
+    document.getElementById('cancelEditBtn').style.display = 'inline-flex';
+    activateTab('new');
+    toast('يمكنك الآن تعديل بيانات السند');
+  }
+  else if(act === 'del'){
+    requirePassword(function(){
+      var cur = loadRecords(profile).filter(function(r){ return r.id !== id; });
+      saveRecords(profile, cur);
+      renderRecords();
+      renderStats();
+      toast('تم حذف السند');
+    }, 'أدخل كلمة السر لتأكيد حذف السند '+rec.voucherNo+'.');
+  }
+});
+
+['fltFrom','fltTo','fltWarehouse','fltSearch'].forEach(function(id){
+  document.getElementById(id).addEventListener('input', renderRecords);
+  document.getElementById(id).addEventListener('change', renderRecords);
+});
+
+document.getElementById('clearFltBtn').addEventListener('click', function(){
+  document.getElementById('fltFrom').value = '';
+  document.getElementById('fltTo').value = '';
+  document.getElementById('fltWarehouse').value = '';
+  document.getElementById('fltSearch').value = '';
+  renderRecords();
+  toast('تم مسح الفلتر');
+});
+
+/* ================= RECEIPT CONFIRMATION TAB ================= */
+var confItemSeq = 0;
+
+function confirmationsKey(p){ return 'awt_confirmations_'+p; }
+function loadConfirmations(p){
+  try{ return JSON.parse(localStorage.getItem(confirmationsKey(p))||'[]'); }catch(e){ return []; }
+}
+function saveConfirmations(p, arr){ localStorage.setItem(confirmationsKey(p), JSON.stringify(arr)); }
+
+function populateConfFromSelect(){
+  var sel = document.getElementById('confFrom');
+  if(!sel) return;
+  var profile = activeProfile();
+  var current = sel.value;
+  sel.innerHTML = '<option value="">اختر المستودع المُرسِل...</option>';
+  Object.keys(WAREHOUSES).forEach(function(key){
+    if(key === profile) return;
+    sel.innerHTML += '<option value="'+key+'"'+(key===current?' selected':'')+'>'+esc(WAREHOUSES[key].name)+'</option>';
+  });
+}
+
+function addConfItemRow(prefill){
+  confItemSeq++;
+  var wrap = document.getElementById('confItemsWrap');
+  var row = document.createElement('div');
+  row.className = 'item-row';
+  row.style.gridTemplateColumns = '1fr .6fr .7fr .7fr 1fr auto';
+  var catOpts = '<option value="">اختر الصنف...</option>' + CATEGORIES.map(function(c){
+    return '<option value="'+esc(c)+'"'+(prefill&&prefill.category===c?' selected':'')+'>'+esc(c)+'</option>';
+  }).join('');
+  row.innerHTML =
+    '<div class="item-field"><label class="mobile-label">الصنف</label>' +
+      '<select class="conf-cat">'+catOpts+'</select></div>' +
+    '<div class="item-field"><label class="mobile-label">السعر (ر.س)</label>' +
+      '<input type="number" class="conf-price" min="0" step="0.01" placeholder="السعر" value="'+(prefill&&prefill.price!=null?prefill.price:'')+'"></div>' +
+    '<div class="item-field"><label class="mobile-label">الكمية المرسلة</label>' +
+      '<input type="number" class="conf-sent" min="0" placeholder="المرسلة" value="'+(prefill&&prefill.sentQty!=null?prefill.sentQty:'')+'"></div>' +
+    '<div class="item-field"><label class="mobile-label">الكمية المستلمة</label>' +
+      '<input type="number" class="conf-received" min="0" placeholder="المستلمة" value="'+(prefill&&prefill.receivedQty!=null?prefill.receivedQty:'')+'"></div>' +
+    '<div class="item-field"><label class="mobile-label">ملاحظة</label>' +
+      '<input type="text" class="conf-note" placeholder="ملاحظة (اختياري)" value="'+esc(prefill?prefill.note:'')+'"></div>' +
+    '<button type="button" class="del-row" title="حذف الصنف">✕<span class="del-row-text"> حذف الصنف</span></button>';
+  wrap.appendChild(row);
+  row.querySelector('.del-row').addEventListener('click', function(){
+    var items = wrap.querySelectorAll('.item-row');
+    if(items.length <= 1){ toast('يجب أن يوجد صنف واحد على الأقل'); return; }
+    row.remove();
+  });
+}
+document.getElementById('addConfItemBtn').addEventListener('click', function(){ addConfItemRow(); });
+
+function resetConfirmForm(keepResult){
+  document.getElementById('confDate').value = todayStr();
+  document.getElementById('confVoucherRef').value = '';
+  document.getElementById('confNotes').value = '';
+  document.getElementById('confItemsWrap').innerHTML = '';
+  addConfItemRow();
+  if(!keepResult) document.getElementById('confResultBox').style.display = 'none';
+  populateConfFromSelect();
+}
+
+function collectConfirmItems(){
+  var items = [];
+  document.querySelectorAll('#confItemsWrap .item-row').forEach(function(row){
+    var cat = row.querySelector('.conf-cat').value;
+    var price = parseFloat(row.querySelector('.conf-price').value);
+    var unit = 'piece';
+    var sent = parseFloat(row.querySelector('.conf-sent').value);
+    var received = parseFloat(row.querySelector('.conf-received').value);
+    var note = row.querySelector('.conf-note').value.trim();
+    if(cat && !isNaN(sent) && !isNaN(received)){
+      items.push({category:cat, price:isNaN(price)?0:price, unit:unit, sentQty:sent, receivedQty:received, note:note});
+    }
+  });
+  return items;
+}
+
+function computeConfirmDiffs(items){
+  var totalSent = 0, totalReceived = 0, shortageCount = 0, excessCount = 0;
+  var rows = items.map(function(it){
+    var diff = it.receivedQty - it.sentQty;
+    totalSent += it.sentQty; totalReceived += it.receivedQty;
+    var status;
+    if(diff === 0) status = 'مطابق';
+    else if(diff < 0){ status = 'نقص '+Math.abs(diff); shortageCount++; }
+    else { status = 'زيادة '+diff; excessCount++; }
+    return {category:it.category, price:Number(it.price||0), unit:it.unit||'piece', sentQty:it.sentQty, receivedQty:it.receivedQty, diff:diff, note:it.note, status:status};
+  });
+  var overall = (shortageCount===0 && excessCount===0) ? 'مطابق بالكامل' :
+    (shortageCount>0 && excessCount>0) ? 'فيه نقص وزيادة معًا' :
+    (shortageCount>0) ? 'فيه نقص' : 'فيه زيادة';
+  return {rows:rows, totalSent:totalSent, totalReceived:totalReceived, shortageCount:shortageCount, excessCount:excessCount, overall:overall};
+}
+
+function renderConfirmResultBox(diffData){
+  var box = document.getElementById('confResultBox');
+  var rowsHtml = diffData.rows.map(function(r){
+    var color = r.diff === 0 ? 'var(--ok)' : 'var(--danger)';
+    return '<tr><td>'+esc(r.category)+'</td><td>'+money(r.price)+' / ريال</td><td>'+r.sentQty+' '+unitLabel(r.unit)+'</td><td>'+r.receivedQty+' '+unitLabel(r.unit)+'</td><td style="color:'+color+';font-weight:700;">'+esc(r.status)+'</td><td>'+esc(r.note||'—')+'</td></tr>';
+  }).join('');
+  box.innerHTML =
+    '<div class="dest-block" style="background:'+(diffData.overall==='مطابق بالكامل'?'var(--ok-bg)':'var(--danger-bg)')+';border-style:solid;">' +
+      '<h3 style="margin:0 0 10px;font-size:14px;color:'+(diffData.overall==='مطابق بالكامل'?'var(--ok)':'var(--danger)')+';">النتيجة: '+esc(diffData.overall)+'</h3>' +
+      '<div class="table-wrap"><table class="records"><thead><tr><th>الصنف</th><th>السعر</th><th>مرسل</th><th>مستلم</th><th>الفرق</th><th>ملاحظة</th></tr></thead><tbody>'+rowsHtml+'</tbody></table></div>' +
+    '</div>';
+  box.style.display = 'block';
+}
+
+function buildConfirmMessage(from, profile, voucherRef, date, diffData, notes){
+  var lines = [];
+  lines.push('تأكيد استلام تحويل بضاعة');
+  lines.push('من: '+whName(from)+'  إلى: '+whName(profile));
+  if(voucherRef) lines.push('رقم السند المرجعي: '+voucherRef);
+  lines.push('تاريخ الاستلام: '+fmtDate(date));
+  lines.push('');
+  diffData.rows.forEach(function(r){
+    lines.push('- '+r.category+' ('+money(r.price)+'/'+unitLabel(r.unit)+'): مرسل '+r.sentQty+' '+unitLabel(r.unit)+' / مستلم '+r.receivedQty+' '+unitLabel(r.unit)+' → '+r.status + (r.note?(' ('+r.note+')'):''));
+  });
+  lines.push('');
+  lines.push('الحالة العامة: '+diffData.overall);
+  if(notes) lines.push('ملاحظات: '+notes);
+  return lines.join('\n');
+}
+
+function runConfirmValidationAndDiff(){
+  var from = document.getElementById('confFrom').value;
+  var items = collectConfirmItems();
+  if(!from){ toast('الرجاء اختيار المستودع المُرسِل'); return null; }
+  if(!items.length){ toast('الرجاء إدخال صنف واحد على الأقل بالكمية المرسلة والمستلمة'); return null; }
+  var diffData = computeConfirmDiffs(items);
+  return {from:from, items:items, diffData:diffData};
+}
+
+function persistConfirmation(from, items, diffData){
+  var profile = activeProfile();
+  var rec = {
+    id: uid(),
+    createdAt: new Date().toISOString(),
+    from: from,
+    voucherRef: document.getElementById('confVoucherRef').value.trim(),
+    date: document.getElementById('confDate').value || todayStr(),
+    items: items,
+    notes: document.getElementById('confNotes').value.trim(),
+    overall: diffData.overall
+  };
+  var list = loadConfirmations(profile);
+  list.push(rec);
+  saveConfirmations(profile, list);
+  return rec;
+}
+
+document.getElementById('confSaveBtn').addEventListener('click', function(){
+  var res = runConfirmValidationAndDiff();
+  if(!res) return;
+  persistConfirmation(res.from, res.items, res.diffData);
+  renderConfirmResultBox(res.diffData);
+  toast('تم حفظ تأكيد الاستلام ('+res.diffData.overall+')');
+  resetConfirmForm(true);
+  renderConfirmRecords();
+});
+
+document.getElementById('confPdfBtn').addEventListener('click', function(){
+  var res = runConfirmValidationAndDiff();
+  if(!res) return;
+  var rec = persistConfirmation(res.from, res.items, res.diffData);
+  renderConfirmResultBox(res.diffData);
+  resetConfirmForm(true);
+  renderConfirmRecords();
+  viewOrDownloadPdf([rec], confirmVoucherHTML, 'AlHaram-Receipt');
+});
+
+document.getElementById('confWaBtn').addEventListener('click', function(){
+  var res = runConfirmValidationAndDiff();
+  if(!res) return;
+  var rec = persistConfirmation(res.from, res.items, res.diffData);
+  renderConfirmResultBox(res.diffData);
+  resetConfirmForm(true);
+  renderConfirmRecords();
+  sendConfirmWhatsapp(rec);
+});
+
+function sendConfirmWhatsapp(rec){
+  var profile = activeProfile();
+  var diffData = computeConfirmDiffs(rec.items);
+  var msg = buildConfirmMessage(rec.from, profile, rec.voucherRef, rec.date, diffData, rec.notes);
+  var phone = (WAREHOUSES[rec.from] && WAREHOUSES[rec.from].phone) ? WAREHOUSES[rec.from].phone : '';
+  var url = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+  toast(phone ? 'جاري فتح واتساب لإرسال النتيجة إلى '+whName(rec.from) : 'لم يُسجَّل رقم هاتف لهذا المستودع، اختر جهة الإرسال يدويًا في واتساب');
+  setTimeout(function(){ window.open(url, '_blank'); }, 400);
+}
+
+function confirmVoucherHTML(rec){
+  var profile = activeProfile();
+  var diffData = computeConfirmDiffs(rec.items);
+  var rowsHtml = diffData.rows.map(function(r,i){
+    return '<tr><td>'+(i+1)+'</td><td>'+esc(r.category)+'</td><td>'+money(r.price)+' / ريال</td><td>'+r.sentQty+' '+unitLabel(r.unit)+'</td><td>'+r.receivedQty+' '+unitLabel(r.unit)+'</td><td>'+esc(r.status)+'</td><td>'+esc(r.note||'—')+'</td></tr>';
+  }).join('');
+  return (
+    '<div class="voucher-page">' +
+      '<div class="v-head">' +
+        '<div class="v-brand">' +
+          '<div class="pyr-mark"><div class="tier t1"></div><div class="tier t2"></div><div class="tier t3"></div></div>' +
+          '<div><h2>أصالة الهرم</h2><p>إيصال تأكيد استلام تحويل</p></div>' +
+        '</div>' +
+        '<div style="text-align:left;font-size:11px;color:#5C6459;">السند المرجعي<br><b style="font-size:14px;color:#16302B;">'+esc(rec.voucherRef||'—')+'</b></div>' +
+      '</div>' +
+      '<div class="v-title">إيصال تأكيد استلام بضاعة</div>' +
+      '<div class="v-meta">' +
+        '<div><b>تاريخ الاستلام</b>'+fmtDate(rec.date)+'</div>' +
+        '<div><b>الحالة العامة</b>'+esc(diffData.overall)+'</div>' +
+      '</div>' +
+      '<div class="v-route">' +
+        '<div class="box">'+esc(whName(rec.from))+'</div>' +
+        '<div class="arrow">⟶</div>' +
+        '<div class="box">'+esc(whName(profile))+'</div>' +
+      '</div>' +
+      '<table class="v-table"><thead><tr><th>م</th><th>الصنف</th><th>السعر</th><th>مرسل</th><th>مستلم</th><th>الحالة</th><th>ملاحظات</th></tr></thead>' +
+      '<tbody>'+rowsHtml+'</tbody></table>' +
+      (rec.notes ? '<div class="v-notes"><b>ملاحظات عامة:</b> '+esc(rec.notes)+'</div>' : '') +
+      '<div class="v-sign">' +
+        '<div>توقيع المستلم<div class="line">الاسم / التوقيع</div></div>' +
+        '<div>توقيع المُرسِل (بعد الاطلاع)<div class="line">الاسم / التوقيع</div></div>' +
+      '</div>' +
+      '<div class="v-foot"><span>الدعم الفني: م. صلاح غالب — 0556321436</span><span>مستلِم في: '+esc(WAREHOUSES[profile].name)+'</span></div>' +
+    '</div>'
+  );
+}
+
+function doPrintConfirm(records){
+  if(!records.length){ toast('لا يوجد إيصال لطباعته'); return; }
+  var area = document.getElementById('printArea');
+  area.innerHTML = records.map(confirmVoucherHTML).join('');
+  setTimeout(function(){ window.print(); }, 80);
+}
+
+function renderConfirmRecords(){
+  var profile = activeProfile();
+  if(!profile) return;
+  var list = loadConfirmations(profile).slice().sort(function(a,b){
+    return (b.date+b.createdAt) > (a.date+a.createdAt) ? 1 : -1;
+  });
+  var tbody = document.getElementById('confRecordsBody');
+  tbody.innerHTML = '';
+  document.getElementById('confRecordsEmpty').style.display = list.length ? 'none' : 'block';
+  list.forEach(function(rec){
+    var catsText = rec.items.map(function(it){ return it.category+' ('+it.receivedQty+'/'+it.sentQty+' '+unitLabel(it.unit)+')'; }).join('، ');
+    var tr = document.createElement('tr');
+    var badgeClass = rec.overall === 'مطابق بالكامل' ? 'badge-out' : 'badge-out';
+    tr.innerHTML =
+      '<td>'+fmtDate(rec.date)+'</td>' +
+      '<td>'+esc(whName(rec.from))+'</td>' +
+      '<td>'+esc(rec.voucherRef||'—')+'</td>' +
+      '<td><span class="badge '+badgeClass+'" style="'+(rec.overall!=='مطابق بالكامل'?'background:var(--danger-bg);color:var(--danger);':'')+'">'+esc(rec.overall)+'</span></td>' +
+      '<td title="'+esc(catsText)+'">'+esc(catsText.length>28?catsText.slice(0,28)+'…':catsText)+'</td>' +
+      '<td><div class="row-actions">' +
+        '<button class="mini-btn" data-act="pdf" data-id="'+rec.id+'">طباعة</button>' +
+        '<button class="mini-btn" data-act="wa" data-id="'+rec.id+'">واتساب</button>' +
+        '<button class="mini-btn danger" data-act="del" data-id="'+rec.id+'">حذف</button>' +
+      '</div></td>';
+    tbody.appendChild(tr);
+  });
+}
+
+document.getElementById('confRecordsBody').addEventListener('click', function(e){
+  var btn = e.target.closest('button[data-act]');
+  if(!btn) return;
+  var id = btn.dataset.id, act = btn.dataset.act;
+  var profile = activeProfile();
+  var list = loadConfirmations(profile);
+  var rec = list.find(function(r){ return r.id === id; });
+  if(!rec) return;
+  if(act === 'pdf'){ viewOrDownloadPdf([rec], confirmVoucherHTML, 'AlHaram-Receipt'); }
+  else if(act === 'wa'){ sendConfirmWhatsapp(rec); }
+  else if(act === 'del'){
+    requirePassword(function(){
+      var cur = loadConfirmations(profile).filter(function(r){ return r.id !== id; });
+      saveConfirmations(profile, cur);
+      renderConfirmRecords();
+      toast('تم حذف تأكيد الاستلام');
+    }, 'أدخل كلمة السر لتأكيد حذف تأكيد الاستلام هذا.');
+  }
+});
+
+function renderConfirmTab(){
+  populateConfFromSelect();
+  if(!document.getElementById('confDate').value) document.getElementById('confDate').value = todayStr();
+  renderConfirmRecords();
+}
+
+/* ================= STATS ================= */
+function renderStats(){
+  var profile = activeProfile();
+  if(!profile) return;
+  var records = loadRecords(profile);
+  var now = new Date();
+  var ym = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  var thisMonth = records.filter(function(r){ return r.date.startsWith(ym); });
+  var totalPieces = thisMonth.reduce(function(s,r){ return s + r.items.reduce(function(a,it){return a+Number(it.qty||0);},0); },0);
+  var totalValue = thisMonth.reduce(function(s,r){ return s + r.items.reduce(function(a,it){return a+Number(it.qty||0)*Number(it.price||0);},0); },0);
+  var destSet = {};
+  thisMonth.forEach(function(r){ destSet[r.to]=1; });
+
+  var box = document.getElementById('statsRow');
+  box.innerHTML =
+    '<div class="stat-box"><div class="num">'+thisMonth.length+'</div><div class="lbl">سندات هذا الشهر</div></div>' +
+    '<div class="stat-box"><div class="num">'+totalPieces+'</div><div class="lbl">قطعة مُحوَّلة هذا الشهر</div></div>' +
+    '<div class="stat-box"><div class="num">'+money(totalValue)+'</div><div class="lbl">قيمة التحويلات هذا الشهر (ر.س)</div></div>' +
+    '<div class="stat-box"><div class="num">'+Object.keys(destSet).length+'</div><div class="lbl">مستودعات مُستقبِلة</div></div>';
+}
+
+/* ================= CATEGORY MANAGER ================= */
+function refreshOpenCategorySelects(){
+  document.querySelectorAll('.item-cat').forEach(function(sel){
+    var current = sel.value;
+    var opts = '<option value="">اختر الصنف...</option>' + CATEGORIES.map(function(c){
+      return '<option value="'+esc(c)+'"'+(c===current?' selected':'')+'>'+esc(c)+'</option>';
+    }).join('');
+    sel.innerHTML = opts;
+  });
+}
+
+function renderCategoriesSettings(){
+  var wrap = document.getElementById('categoriesList');
+  if(!wrap) return;
+  wrap.innerHTML = '';
+  if(!CATEGORIES.length){
+    wrap.innerHTML = '<div class="cat-empty">لا توجد أصناف حاليًا، أضف صنفًا جديدًا أعلاه.</div>';
+    return;
+  }
+  CATEGORIES.forEach(function(c, idx){
+    var chip = document.createElement('span');
+    chip.className = 'cat-chip';
+    var label = document.createElement('span');
+    label.textContent = c;
+    chip.appendChild(label);
+    var del = document.createElement('button');
+    del.type = 'button';
+    del.title = 'حذف الصنف';
+    del.textContent = '✕';
+    del.addEventListener('click', function(){
+      if(!confirm('حذف صنف "'+c+'" من قائمة الأصناف؟ السندات السابقة التي تستخدمه لن تتأثر.')) return;
+      CATEGORIES.splice(idx,1);
+      saveCategories();
+      renderCategoriesSettings();
+      refreshOpenCategorySelects();
+      toast('تم حذف الصنف');
+    });
+    chip.appendChild(del);
+    wrap.appendChild(chip);
+  });
+}
+
+document.getElementById('addCategoryBtn').addEventListener('click', function(){
+  var input = document.getElementById('newCategoryInput');
+  var val = input.value.trim();
+  if(!val){ toast('اكتب اسم الصنف أولاً'); return; }
+  if(CATEGORIES.indexOf(val) !== -1){ toast('هذا الصنف موجود بالفعل'); input.value=''; return; }
+  CATEGORIES.push(val);
+  saveCategories();
+  input.value = '';
+  renderCategoriesSettings();
+  refreshOpenCategorySelects();
+  toast('تمت إضافة الصنف، وأصبح متاحًا في نموذج الإدخال');
+});
+document.getElementById('newCategoryInput').addEventListener('keydown', function(e){
+  if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('addCategoryBtn').click(); }
+});
+
+/* ================= WAREHOUSE / BRANCH MANAGER ================= */
+function refreshOpenDestinationSelects(){
+  document.querySelectorAll('.dest-select').forEach(function(sel){
+    var current = sel.value;
+    sel.innerHTML = destinationOptions(current);
+  });
+}
+
+function renderWarehousesSettings(){
+  var wrap = document.getElementById('warehousesList');
+  if(!wrap) return;
+  wrap.innerHTML = '';
+  var profile = activeProfile();
+  Object.keys(WAREHOUSES).forEach(function(key){
+    var w = WAREHOUSES[key];
+    var chip = document.createElement('span');
+    chip.className = 'cat-chip';
+    var label = document.createElement('span');
+    label.textContent = w.name + (key === profile ? ' (هذا الجهاز)' : '') + (w.phone ? ' — 📱'+w.phone : '');
+    chip.appendChild(label);
+    var editName = document.createElement('button');
+    editName.type = 'button';
+    editName.title = 'إعادة تسمية المستودع';
+    editName.textContent = '✏️';
+    editName.style.color = 'var(--pine)';
+    editName.addEventListener('click', function(){
+      var val = prompt('الاسم الجديد لـ "'+w.name+'":', w.name);
+      if(val === null) return;
+      val = val.trim();
+      if(!val){ toast('الاسم لا يمكن أن يكون فارغًا'); return; }
+      var exists = Object.keys(WAREHOUSES).some(function(k){ return k !== key && WAREHOUSES[k].name === val; });
+      if(exists){ toast('هذا الاسم مستخدم بالفعل لمستودع آخر'); return; }
+      WAREHOUSES[key].name = val;
+      WAREHOUSES[key].short = val;
+      saveWarehouses();
+      renderWarehousesSettings();
+      renderBackupTab();
+      refreshOpenDestinationSelects();
+      renderRecords();
+      renderHeader();
+      toast('تم تحديث اسم المستودع. جميع السندات السابقة المرتبطة به ستظهر بالاسم الجديد تلقائيًا');
+    });
+    chip.appendChild(editName);
+    var editPhone = document.createElement('button');
+    editPhone.type = 'button';
+    editPhone.title = 'تعديل رقم الهاتف';
+    editPhone.textContent = '📱';
+    editPhone.style.color = 'var(--pine)';
+    editPhone.addEventListener('click', function(){
+      var val = prompt('رقم واتساب "'+w.name+'" (أرقام فقط، مع رمز الدولة، مثال 9665XXXXXXXX):', w.phone||'');
+      if(val === null) return;
+      WAREHOUSES[key].phone = val.trim().replace(/[^0-9]/g,'');
+      saveWarehouses();
+      renderWarehousesSettings();
+      toast('تم تحديث رقم هاتف '+w.name);
+    });
+    chip.appendChild(editPhone);
+    var isDefault = DEFAULT_WAREHOUSES.hasOwnProperty(key);
+    if(!isDefault){
+      var del = document.createElement('button');
+      del.type = 'button';
+      del.title = 'حذف المستودع';
+      del.textContent = '✕';
+      del.addEventListener('click', function(){
+        if(key === profile){ toast('لا يمكن حذف المستودع المرتبط بهذا الجهاز حاليًا'); return; }
+        if(!confirm('حذف "'+w.name+'" من قائمة المستودعات والفروع؟ السندات السابقة المرتبطة به تبقى محفوظة لكن باسم "مستودع محذوف".')) return;
+        delete WAREHOUSES[key];
+        SETUP_CHOICES = SETUP_CHOICES.filter(function(k){ return k !== key; });
+        saveWarehouses();
+        renderWarehousesSettings();
+        refreshOpenDestinationSelects();
+        renderRecords();
+        toast('تم حذف المستودع');
+      });
+      chip.appendChild(del);
+    }
+    wrap.appendChild(chip);
+  });
+}
+
+document.getElementById('addWarehouseBtn').addEventListener('click', function(){
+  var input = document.getElementById('newWarehouseInput');
+  var val = input.value.trim();
+  if(!val){ toast('اكتب اسم المستودع أو الفرع أولاً'); return; }
+  var exists = Object.keys(WAREHOUSES).some(function(k){ return WAREHOUSES[k].name === val; });
+  if(exists){ toast('هذا المستودع موجود بالفعل'); input.value=''; return; }
+  var key = genWarehouseKey();
+  var phoneInput = document.getElementById('newWarehousePhoneInput');
+  WAREHOUSES[key] = {name: val, short: val, phone: (phoneInput.value||'').trim().replace(/[^0-9]/g,'')};
+  SETUP_CHOICES.push(key);
+  saveWarehouses();
+  input.value = '';
+  phoneInput.value = '';
+  renderWarehousesSettings();
+  refreshOpenDestinationSelects();
+  renderRecords();
+  toast('تمت إضافة المستودع، وأصبح متاحًا كوجهة تحويل وكخيار عند إعداد جهاز جديد');
+});
+document.getElementById('newWarehouseInput').addEventListener('keydown', function(e){
+  if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('addWarehouseBtn').click(); }
+});
+
+/* ================= BACKUP TAB ================= */
+function renderBackupTab(){
+  var profile = activeProfile();
+  document.getElementById('currentWhLabel').textContent = profile ? whName(profile) : '—';
+  renderCategoriesSettings();
+  renderWarehousesSettings();
+  renderDualMainSettings();
+}
+
+function renderDualMainSettings(){
+  var hint = document.getElementById('dualMainHint');
+  var btn = document.getElementById('dualMainToggleBtn');
+  if(!setup || !setup.branch){ hint.textContent = ''; btn.style.display='none'; return; }
+  btn.style.display = 'inline-flex';
+  if(setup.dualMain){
+    hint.textContent = 'مفعّلة حاليًا: يمكن لهذا الجهاز (فرع '+whName(setup.branch)+') التبديل للعمل أيضًا بصفة المستودع الرئيسي، مع فصل تام للسجلات بين الصفتين. عطّلها إذا انتقلت صفة الرئيسي لجهاز فرع آخر.';
+    btn.textContent = 'إلغاء صفة المستودع الرئيسي عن هذا الجهاز';
+    btn.className = 'btn btn-danger';
+  } else {
+    hint.textContent = 'غير مفعّلة حاليًا. فعّلها إذا أصبح هذا الجهاز (فرع '+whName(setup.branch)+') هو المستودع الرئيسي، ليتمكن من العمل بصفتين منفصلتين على نفس الجهاز.';
+    btn.textContent = 'تفعيل صفة المستودع الرئيسي على هذا الجهاز';
+    btn.className = 'btn btn-primary';
+  }
+}
+document.getElementById('dualMainToggleBtn').addEventListener('click', function(){
+  if(!setup) return;
+  var turningOn = !setup.dualMain;
+  if(turningOn){
+    if(!confirm('سيتمكن هذا الجهاز من العمل بصفتين: "'+whName(setup.branch)+'" و"'+whName('MAIN')+'"، بسجلات منفصلة تمامًا لكل صفة. متابعة؟')) return;
+  } else {
+    if(!confirm('سيتم إلغاء صفة "المستودع الرئيسي" عن هذا الجهاز. سجلات صفة الرئيسي المحفوظة سابقًا تبقى محفوظة ولن تُحذف، لكن لن تظهر إلا إذا أعدت تفعيل الخيار. متابعة؟')) return;
+  }
+  setDualMain(turningOn);
+});
+
+document.getElementById('exportBtn').addEventListener('click', function(){
+  var data = {};
+  for(var i=0;i<localStorage.length;i++){
+    var k = localStorage.key(i);
+    if(k.indexOf('awt_') === 0) data[k] = localStorage.getItem(k);
+  }
+  var jsonStr = JSON.stringify(data,null,2);
+  var fname = 'اصالة-الهرم-نسخة-احتياطية-'+todayStr()+'.json';
+
+  // داخل تطبيق أندرويد: روابط blob: لا تُنزَّل عبر <a download> كما في المتصفح، لذا نستخدم الجسر الأصلي
+  if(typeof window.AndroidPdfBridge !== 'undefined' && window.AndroidPdfBridge && typeof window.AndroidPdfBridge.saveBackupBase64 === 'function'){
+    try{
+      var b64 = btoa(unescape(encodeURIComponent(jsonStr)));
+      window.AndroidPdfBridge.saveBackupBase64(b64, fname);
+    }catch(e){
+      toast('تعذر إنشاء النسخة الاحتياطية');
+    }
+    return;
+  }
+
+  // خارج التطبيق (متصفح عادي): الطريقة القياسية للتحميل
+  var blob = new Blob([jsonStr], {type:'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = fname;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  toast('تم تنزيل النسخة الاحتياطية');
+});
+
+document.getElementById('importBtnTrigger').addEventListener('click', function(){
+  document.getElementById('importFile').click();
+});
+document.getElementById('importFile').addEventListener('change', function(e){
+  var file = e.target.files[0];
+  if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(){
+    try{
+      var data = JSON.parse(reader.result);
+      if(!confirm('سيتم استبدال البيانات الحالية على هذا الجهاز بالنسخة المستوردة. متابعة؟')) return;
+      Object.keys(data).forEach(function(k){
+        if(k.indexOf('awt_') === 0) localStorage.setItem(k, data[k]);
+      });
+      loadCategories();
+      loadWarehouses();
+      toast('تم استيراد النسخة الاحتياطية بنجاح');
+      initSetup();
+    }catch(err){
+      toast('ملف غير صالح، تعذر الاستيراد');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+document.getElementById('changeWhBtn').addEventListener('click', changeWarehouse);
+
+document.getElementById('wipeBtn').addEventListener('click', function(){
+  var profile = activeProfile();
+  if(!profile) return;
+  requirePassword(function(){
+    localStorage.removeItem(recordsKey(profile));
+    localStorage.removeItem(counterKey(profile));
+    localStorage.removeItem('awt_setup');
+    setup = null;
+    toast('تم حذف السجلات، سيتم إعادة تشغيل البرنامج من البداية...');
+    setTimeout(function(){ initSetup(); }, 900);
+  }, 'سيتم حذف جميع سندات مستودع "'+WAREHOUSES[profile].name+'" نهائيًا، وإعادة البرنامج لشاشة اختيار المستودع من جديد. أدخل كلمة السر للتأكيد.');
+});
+
+/* ================= DISCOUNT TAB (التخفيض) ================= */
+var discItemSeq = 0;
+var discEditingId = null;
+
+function discRecordsKey(p){ return 'awt_discounts_'+p; }
+function discCounterKey(p){ return 'awt_disc_counter_'+p; }
+function loadDiscRecords(p){ try{ return JSON.parse(localStorage.getItem(discRecordsKey(p))||'[]'); }catch(e){ return []; } }
+function saveDiscRecords(p, arr){ localStorage.setItem(discRecordsKey(p), JSON.stringify(arr)); }
+function nextDiscountNo(p){
+  var n = parseInt(localStorage.getItem(discCounterKey(p))||'0',10) + 1;
+  localStorage.setItem(discCounterKey(p), String(n));
+  return p + '-KHFD-' + String(n).padStart(5,'0');
+}
+
+function addDiscItemRow(prefill){
+  discItemSeq++;
+  var wrap = document.getElementById('discItemsWrap');
+  var row = document.createElement('div');
+  row.className = 'item-row';
+  row.style.gridTemplateColumns = '1.1fr .5fr .65fr .65fr 1fr auto';
+  var catOpts = '<option value="">اختر الصنف...</option>' + CATEGORIES.map(function(c){
+    return '<option value="'+esc(c)+'"'+(prefill&&prefill.category===c?' selected':'')+'>'+esc(c)+'</option>';
+  }).join('');
+  row.innerHTML =
+    '<div class="item-field"><label class="mobile-label">الصنف</label>' +
+      '<select class="disc-cat">'+catOpts+'</select></div>' +
+    '<div class="item-field"><label class="mobile-label">الكمية</label>' +
+      '<input type="number" class="disc-qty" min="1" placeholder="الكمية" value="'+(prefill?prefill.qty:'')+'"></div>' +
+    '<div class="item-field"><label class="mobile-label">السعر السابق</label>' +
+      '<input type="number" class="disc-prev" min="0" step="0.01" placeholder="السعر السابق" value="'+(prefill&&prefill.prevPrice!=null?prefill.prevPrice:'')+'"></div>' +
+    '<div class="item-field"><label class="mobile-label">السعر الحالي</label>' +
+      '<input type="number" class="disc-cur" min="0" step="0.01" placeholder="السعر الحالي" value="'+(prefill&&prefill.curPrice!=null?prefill.curPrice:'')+'"></div>' +
+    '<div class="item-field"><label class="mobile-label">ملاحظة</label>' +
+      '<input type="text" class="disc-note" placeholder="ملاحظة (اختياري)" value="'+esc(prefill?prefill.note:'')+'"></div>' +
+    '<button type="button" class="del-row" title="حذف الصنف">✕<span class="del-row-text"> حذف الصنف</span></button>';
+  wrap.appendChild(row);
+  row.querySelector('.del-row').addEventListener('click', function(){
+    var items = wrap.querySelectorAll('.item-row');
+    if(items.length <= 1){ toast('يجب أن يوجد صنف واحد على الأقل'); return; }
+    row.remove();
+  });
+}
+document.getElementById('addDiscItemBtn').addEventListener('click', function(){ addDiscItemRow(); });
+
+function resetDiscForm(){
+  discEditingId = null;
+  document.getElementById('discDate').value = todayStr();
+  document.getElementById('discNotes').value = '';
+  document.getElementById('discItemsWrap').innerHTML = '';
+  addDiscItemRow();
+  document.getElementById('discFormTitle').textContent = 'سند تخفيض أسعار جديد';
+  document.getElementById('discCancelEditBtn').style.display = 'none';
+}
+
+function collectDiscItems(){
+  var items = [];
+  document.querySelectorAll('#discItemsWrap .item-row').forEach(function(row){
+    var cat = row.querySelector('.disc-cat').value;
+    var qty = parseInt(row.querySelector('.disc-qty').value, 10);
+    var prevPrice = parseFloat(row.querySelector('.disc-prev').value);
+    var curPrice = parseFloat(row.querySelector('.disc-cur').value);
+    var note = row.querySelector('.disc-note').value.trim();
+    if(cat && qty > 0 && prevPrice >= 0 && !isNaN(prevPrice) && curPrice >= 0 && !isNaN(curPrice)){
+      items.push({category:cat, qty:qty, prevPrice:prevPrice, curPrice:curPrice, note:note});
+    }
+  });
+  return items;
+}
+
+function persistDiscForm(){
+  var profile = activeProfile();
+  var date = document.getElementById('discDate').value || todayStr();
+  var notes = document.getElementById('discNotes').value.trim();
+  var items = collectDiscItems();
+  if(!items.length){ toast('الرجاء إضافة صنف واحد على الأقل بكمية وأسعار صحيحة'); return null; }
+
+  var records = loadDiscRecords(profile);
+  var rec;
+  if(discEditingId){
+    var idx = records.findIndex(function(r){ return r.id === discEditingId; });
+    if(idx > -1){
+      records[idx].date = date;
+      records[idx].items = items;
+      records[idx].notes = notes;
+      records[idx].editedAt = new Date().toISOString();
+      rec = records[idx];
+    }
+  } else {
+    rec = {
+      id: uid(), voucherNo: nextDiscountNo(profile), date: date, warehouse: profile,
+      items: items, notes: notes, createdAt: new Date().toISOString(), editedAt: null
+    };
+    records.push(rec);
+  }
+  saveDiscRecords(profile, records);
+  return rec ? [rec] : null;
+}
+
+document.getElementById('discSaveBtn').addEventListener('click', function(){
+  var created = persistDiscForm();
+  if(!created) return;
+  toast(discEditingId ? 'تم تحديث سند التخفيض بنجاح' : 'تم حفظ سند التخفيض بنجاح');
+  resetDiscForm();
+  renderDiscRecords();
+  activateTab('discount');
+});
+document.getElementById('discCancelEditBtn').addEventListener('click', function(){ resetDiscForm(); });
+
+function discVoucherHTML(rec){
+  var profile = activeProfile();
+  var rows = rec.items.map(function(it, i){
+    var diffPerUnit = Number(it.prevPrice||0) - Number(it.curPrice||0);
+    var lineDiff = diffPerUnit * Number(it.qty||0);
+    return '<tr><td>'+(i+1)+'</td><td>'+esc(it.category)+'</td><td>'+esc(it.qty)+' حبة</td>' +
+      '<td>'+money(it.prevPrice)+' / ريال</td><td>'+money(it.curPrice)+' / ريال</td>' +
+      '<td>'+money(lineDiff)+'</td><td>'+esc(it.note||'—')+'</td></tr>';
+  }).join('');
+  var totalQty = rec.items.reduce(function(s,it){ return s+Number(it.qty||0); },0);
+  var totalDiff = rec.items.reduce(function(s,it){ return s+((Number(it.prevPrice||0)-Number(it.curPrice||0))*Number(it.qty||0)); },0);
+  var editedNote = rec.editedAt ? ('<span>(تم التعديل بتاريخ '+esc(rec.editedAt.slice(0,10))+')</span>') : '';
+  return (
+    '<div class="voucher-page">' +
+      '<div class="v-head">' +
+        '<div class="v-brand">' +
+          '<div class="pyr-mark"><div class="tier t1"></div><div class="tier t2"></div><div class="tier t3"></div></div>' +
+          '<div><h2>أصالة الهرم</h2><p>سند تخفيض أسعار</p></div>' +
+        '</div>' +
+        '<div style="text-align:left;font-size:11px;color:#5C6459;">رقم السند<br><b style="font-size:14px;color:#16302B;">'+esc(rec.voucherNo)+'</b></div>' +
+      '</div>' +
+      '<div class="v-title">سند تخفيض أسعار</div>' +
+      '<div class="v-meta">' +
+        '<div><b>المستودع</b>'+esc(whName(rec.warehouse))+'</div>' +
+        '<div><b>التاريخ</b>'+fmtDate(rec.date)+'</div>' +
+        '<div><b>حالة السند</b>'+(rec.editedAt?'معدَّل '+editedNote:'أصلي')+'</div>' +
+      '</div>' +
+      '<table class="v-table"><thead><tr><th>م</th><th>الصنف</th><th>الكمية</th><th>السعر السابق</th><th>السعر الحالي</th><th>قيمة التخفيض</th><th>ملاحظات</th></tr></thead>' +
+      '<tbody>'+rows+'<tr><td colspan="2">الإجمالي</td><td>'+totalQty+'</td><td></td><td></td><td>'+money(totalDiff)+'</td><td></td></tr></tbody></table>' +
+      (rec.notes ? '<div class="v-notes"><b>ملاحظات عامة:</b> '+esc(rec.notes)+'</div>' : '') +
+      '<div class="v-foot"><span>الدعم الفني: م. صلاح غالب — 0556321436</span><span>صادر من: '+esc(whName(rec.warehouse))+'</span></div>' +
+    '</div>'
+  );
+}
+
+function discWaSummary(records){
+  return 'سندات تخفيض أسعار - أصالة الهرم:\n' + records.map(function(r){
+    return 'سند '+r.voucherNo+' | '+whShort(r.warehouse)+' | '+fmtDate(r.date);
+  }).join('\n');
+}
+
+document.getElementById('discPdfBtn').addEventListener('click', function(){
+  var created = persistDiscForm();
+  if(!created) return;
+  resetDiscForm();
+  renderDiscRecords();
+  viewOrDownloadPdf(created, discVoucherHTML, 'AlHaram-Discount');
+});
+document.getElementById('discWaBtn').addEventListener('click', function(){
+  var created = persistDiscForm();
+  if(!created) return;
+  resetDiscForm();
+  renderDiscRecords();
+  shareOrDownloadPdf(created, discVoucherHTML, 'AlHaram-Discount', discWaSummary);
+});
+
+function renderDiscRecords(){
+  var profile = activeProfile();
+  if(!profile) return;
+  var records = loadDiscRecords(profile).slice().sort(function(a,b){
+    return (b.date+b.createdAt) > (a.date+a.createdAt) ? 1 : -1;
+  });
+  var tbody = document.getElementById('discRecordsBody');
+  tbody.innerHTML = '';
+  document.getElementById('discRecordsEmpty').style.display = records.length ? 'none' : 'block';
+  records.forEach(function(r){
+    var totalQty = r.items.reduce(function(s,it){ return s+Number(it.qty||0); },0);
+    var catsText = r.items.map(function(it){ return it.category+' ('+it.qty+')'; }).join('، ');
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>'+esc(r.voucherNo)+(r.editedAt?' <span class="badge badge-out">معدَّل</span>':'')+'</td>' +
+      '<td>'+fmtDate(r.date)+'</td>' +
+      '<td title="'+esc(catsText)+'">'+esc(catsText.length>28?catsText.slice(0,28)+'…':catsText)+'</td>' +
+      '<td>'+totalQty+'</td>' +
+      '<td title="'+esc(r.notes)+'">'+esc((r.notes||'—').slice(0,18))+'</td>' +
+      '<td><div class="row-actions">' +
+        '<button class="mini-btn" data-act="pdf" data-id="'+r.id+'">طباعة</button>' +
+        '<button class="mini-btn" data-act="wa" data-id="'+r.id+'">واتساب</button>' +
+        '<button class="mini-btn" data-act="edit" data-id="'+r.id+'">تعديل</button>' +
+        '<button class="mini-btn danger" data-act="del" data-id="'+r.id+'">حذف</button>' +
+      '</div></td>';
+    tbody.appendChild(tr);
+  });
+}
+document.getElementById('discRecordsBody').addEventListener('click', function(e){
+  var btn = e.target.closest('button[data-act]');
+  if(!btn) return;
+  var id = btn.dataset.id, act = btn.dataset.act;
+  var profile = activeProfile();
+  var records = loadDiscRecords(profile);
+  var rec = records.find(function(r){ return r.id === id; });
+  if(!rec) return;
+  if(act === 'pdf'){ viewOrDownloadPdf([rec], discVoucherHTML, 'AlHaram-Discount'); }
+  else if(act === 'wa'){ shareOrDownloadPdf([rec], discVoucherHTML, 'AlHaram-Discount', discWaSummary); }
+  else if(act === 'edit'){
+    discEditingId = id;
+    document.getElementById('discDate').value = rec.date;
+    document.getElementById('discNotes').value = rec.notes || '';
+    document.getElementById('discItemsWrap').innerHTML = '';
+    rec.items.forEach(function(it){ addDiscItemRow(it); });
+    document.getElementById('discFormTitle').textContent = 'تعديل سند رقم '+rec.voucherNo;
+    document.getElementById('discCancelEditBtn').style.display = 'inline-flex';
+    activateTab('discount');
+    toast('يمكنك الآن تعديل بيانات السند');
+  }
+  else if(act === 'del'){
+    requirePassword(function(){
+      var cur = loadDiscRecords(profile).filter(function(r){ return r.id !== id; });
+      saveDiscRecords(profile, cur);
+      renderDiscRecords();
+      toast('تم حذف السند');
+    }, 'أدخل كلمة السر لتأكيد حذف السند '+rec.voucherNo+'.');
+  }
+});
+
+/* ================= DAMAGED TAB (التالف) ================= */
+var dmgItemSeq = 0;
+var dmgEditingId = null;
+
+function dmgRecordsKey(p){ return 'awt_damaged_'+p; }
+function dmgCounterKey(p){ return 'awt_dmg_counter_'+p; }
+function loadDmgRecords(p){ try{ return JSON.parse(localStorage.getItem(dmgRecordsKey(p))||'[]'); }catch(e){ return []; } }
+function saveDmgRecords(p, arr){ localStorage.setItem(dmgRecordsKey(p), JSON.stringify(arr)); }
+function nextDamagedNo(p){
+  var n = parseInt(localStorage.getItem(dmgCounterKey(p))||'0',10) + 1;
+  localStorage.setItem(dmgCounterKey(p), String(n));
+  return p + '-TLF-' + String(n).padStart(5,'0');
+}
+
+function addDmgItemRow(prefill){
+  dmgItemSeq++;
+  var wrap = document.getElementById('dmgItemsWrap');
+  var row = document.createElement('div');
+  row.className = 'item-row';
+  row.style.gridTemplateColumns = '1.2fr .55fr .7fr 1fr auto';
+  var catOpts = '<option value="">اختر الصنف...</option>' + CATEGORIES.map(function(c){
+    return '<option value="'+esc(c)+'"'+(prefill&&prefill.category===c?' selected':'')+'>'+esc(c)+'</option>';
+  }).join('');
+  row.innerHTML =
+    '<div class="item-field"><label class="mobile-label">الصنف</label>' +
+      '<select class="dmg-cat">'+catOpts+'</select></div>' +
+    '<div class="item-field"><label class="mobile-label">الكمية</label>' +
+      '<input type="number" class="dmg-qty" min="1" placeholder="الكمية" value="'+(prefill?prefill.qty:'')+'"></div>' +
+    '<div class="item-field"><label class="mobile-label">السعر</label>' +
+      '<input type="number" class="dmg-price" min="0" step="0.01" placeholder="السعر" value="'+(prefill&&prefill.price!=null?prefill.price:'')+'"></div>' +
+    '<div class="item-field"><label class="mobile-label">ملاحظة</label>' +
+      '<input type="text" class="dmg-note" placeholder="ملاحظة (اختياري)" value="'+esc(prefill?prefill.note:'')+'"></div>' +
+    '<button type="button" class="del-row" title="حذف الصنف">✕<span class="del-row-text"> حذف الصنف</span></button>';
+  wrap.appendChild(row);
+  row.querySelector('.del-row').addEventListener('click', function(){
+    var items = wrap.querySelectorAll('.item-row');
+    if(items.length <= 1){ toast('يجب أن يوجد صنف واحد على الأقل'); return; }
+    row.remove();
+  });
+}
+document.getElementById('addDmgItemBtn').addEventListener('click', function(){ addDmgItemRow(); });
+
+function resetDmgForm(){
+  dmgEditingId = null;
+  document.getElementById('dmgDate').value = todayStr();
+  document.getElementById('dmgNotes').value = '';
+  document.getElementById('dmgItemsWrap').innerHTML = '';
+  addDmgItemRow();
+  document.getElementById('dmgFormTitle').textContent = 'سند تالف جديد';
+  document.getElementById('dmgCancelEditBtn').style.display = 'none';
+}
+
+function collectDmgItems(){
+  var items = [];
+  document.querySelectorAll('#dmgItemsWrap .item-row').forEach(function(row){
+    var cat = row.querySelector('.dmg-cat').value;
+    var qty = parseInt(row.querySelector('.dmg-qty').value, 10);
+    var price = parseFloat(row.querySelector('.dmg-price').value);
+    var note = row.querySelector('.dmg-note').value.trim();
+    if(cat && qty > 0 && price >= 0 && !isNaN(price)) items.push({category:cat, qty:qty, price:price, note:note});
+  });
+  return items;
+}
+
+function persistDmgForm(){
+  var profile = activeProfile();
+  var date = document.getElementById('dmgDate').value || todayStr();
+  var notes = document.getElementById('dmgNotes').value.trim();
+  var items = collectDmgItems();
+  if(!items.length){ toast('الرجاء إضافة صنف واحد على الأقل بكمية وسعر صحيحين'); return null; }
+
+  var records = loadDmgRecords(profile);
+  var rec;
+  if(dmgEditingId){
+    var idx = records.findIndex(function(r){ return r.id === dmgEditingId; });
+    if(idx > -1){
+      records[idx].date = date;
+      records[idx].items = items;
+      records[idx].notes = notes;
+      records[idx].editedAt = new Date().toISOString();
+      rec = records[idx];
+    }
+  } else {
+    rec = {
+      id: uid(), voucherNo: nextDamagedNo(profile), date: date, warehouse: profile,
+      items: items, notes: notes, createdAt: new Date().toISOString(), editedAt: null
+    };
+    records.push(rec);
+  }
+  saveDmgRecords(profile, records);
+  return rec ? [rec] : null;
+}
+
+document.getElementById('dmgSaveBtn').addEventListener('click', function(){
+  var created = persistDmgForm();
+  if(!created) return;
+  toast(dmgEditingId ? 'تم تحديث سند التالف بنجاح' : 'تم حفظ سند التالف بنجاح');
+  resetDmgForm();
+  renderDmgRecords();
+  activateTab('damaged');
+});
+document.getElementById('dmgCancelEditBtn').addEventListener('click', function(){ resetDmgForm(); });
+
+function dmgVoucherHTML(rec){
+  var rows = rec.items.map(function(it, i){
+    var lineTotal = Number(it.price||0) * Number(it.qty||0);
+    return '<tr><td>'+(i+1)+'</td><td>'+esc(it.category)+'</td><td>'+esc(it.qty)+' حبة</td>' +
+      '<td>'+money(it.price)+' / ريال</td><td>'+money(lineTotal)+'</td><td>'+esc(it.note||'—')+'</td></tr>';
+  }).join('');
+  var totalQty = rec.items.reduce(function(s,it){ return s+Number(it.qty||0); },0);
+  var totalValue = rec.items.reduce(function(s,it){ return s+(Number(it.price||0)*Number(it.qty||0)); },0);
+  var editedNote = rec.editedAt ? ('<span>(تم التعديل بتاريخ '+esc(rec.editedAt.slice(0,10))+')</span>') : '';
+  return (
+    '<div class="voucher-page">' +
+      '<div class="v-head">' +
+        '<div class="v-brand">' +
+          '<div class="pyr-mark"><div class="tier t1"></div><div class="tier t2"></div><div class="tier t3"></div></div>' +
+          '<div><h2>أصالة الهرم</h2><p>سند تالف</p></div>' +
+        '</div>' +
+        '<div style="text-align:left;font-size:11px;color:#5C6459;">رقم السند<br><b style="font-size:14px;color:#16302B;">'+esc(rec.voucherNo)+'</b></div>' +
+      '</div>' +
+      '<div class="v-title">سند تالف</div>' +
+      '<div class="v-meta">' +
+        '<div><b>المستودع</b>'+esc(whName(rec.warehouse))+'</div>' +
+        '<div><b>التاريخ</b>'+fmtDate(rec.date)+'</div>' +
+        '<div><b>حالة السند</b>'+(rec.editedAt?'معدَّل '+editedNote:'أصلي')+'</div>' +
+      '</div>' +
+      '<table class="v-table"><thead><tr><th>م</th><th>الصنف</th><th>الكمية</th><th>السعر</th><th>القيمة</th><th>ملاحظات</th></tr></thead>' +
+      '<tbody>'+rows+'<tr><td colspan="2">الإجمالي</td><td>'+totalQty+'</td><td></td><td>'+money(totalValue)+'</td><td></td></tr></tbody></table>' +
+      (rec.notes ? '<div class="v-notes"><b>ملاحظات عامة:</b> '+esc(rec.notes)+'</div>' : '') +
+      '<div class="v-foot"><span>الدعم الفني: م. صلاح غالب — 0556321436</span><span>صادر من: '+esc(whName(rec.warehouse))+'</span></div>' +
+    '</div>'
+  );
+}
+
+function dmgWaSummary(records){
+  return 'سندات تالف - أصالة الهرم:\n' + records.map(function(r){
+    return 'سند '+r.voucherNo+' | '+whShort(r.warehouse)+' | '+fmtDate(r.date);
+  }).join('\n');
+}
+
+document.getElementById('dmgPdfBtn').addEventListener('click', function(){
+  var created = persistDmgForm();
+  if(!created) return;
+  resetDmgForm();
+  renderDmgRecords();
+  viewOrDownloadPdf(created, dmgVoucherHTML, 'AlHaram-Damaged');
+});
+document.getElementById('dmgWaBtn').addEventListener('click', function(){
+  var created = persistDmgForm();
+  if(!created) return;
+  resetDmgForm();
+  renderDmgRecords();
+  shareOrDownloadPdf(created, dmgVoucherHTML, 'AlHaram-Damaged', dmgWaSummary);
+});
+
+function renderDmgRecords(){
+  var profile = activeProfile();
+  if(!profile) return;
+  var records = loadDmgRecords(profile).slice().sort(function(a,b){
+    return (b.date+b.createdAt) > (a.date+a.createdAt) ? 1 : -1;
+  });
+  var tbody = document.getElementById('dmgRecordsBody');
+  tbody.innerHTML = '';
+  document.getElementById('dmgRecordsEmpty').style.display = records.length ? 'none' : 'block';
+  records.forEach(function(r){
+    var totalQty = r.items.reduce(function(s,it){ return s+Number(it.qty||0); },0);
+    var totalValue = r.items.reduce(function(s,it){ return s+(Number(it.price||0)*Number(it.qty||0)); },0);
+    var catsText = r.items.map(function(it){ return it.category+' ('+it.qty+')'; }).join('، ');
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>'+esc(r.voucherNo)+(r.editedAt?' <span class="badge badge-out">معدَّل</span>':'')+'</td>' +
+      '<td>'+fmtDate(r.date)+'</td>' +
+      '<td title="'+esc(catsText)+'">'+esc(catsText.length>28?catsText.slice(0,28)+'…':catsText)+'</td>' +
+      '<td>'+totalQty+'</td>' +
+      '<td>'+money(totalValue)+'</td>' +
+      '<td title="'+esc(r.notes)+'">'+esc((r.notes||'—').slice(0,18))+'</td>' +
+      '<td><div class="row-actions">' +
+        '<button class="mini-btn" data-act="pdf" data-id="'+r.id+'">طباعة</button>' +
+        '<button class="mini-btn" data-act="wa" data-id="'+r.id+'">واتساب</button>' +
+        '<button class="mini-btn" data-act="edit" data-id="'+r.id+'">تعديل</button>' +
+        '<button class="mini-btn danger" data-act="del" data-id="'+r.id+'">حذف</button>' +
+      '</div></td>';
+    tbody.appendChild(tr);
+  });
+}
+document.getElementById('dmgRecordsBody').addEventListener('click', function(e){
+  var btn = e.target.closest('button[data-act]');
+  if(!btn) return;
+  var id = btn.dataset.id, act = btn.dataset.act;
+  var profile = activeProfile();
+  var records = loadDmgRecords(profile);
+  var rec = records.find(function(r){ return r.id === id; });
+  if(!rec) return;
+  if(act === 'pdf'){ viewOrDownloadPdf([rec], dmgVoucherHTML, 'AlHaram-Damaged'); }
+  else if(act === 'wa'){ shareOrDownloadPdf([rec], dmgVoucherHTML, 'AlHaram-Damaged', dmgWaSummary); }
+  else if(act === 'edit'){
+    dmgEditingId = id;
+    document.getElementById('dmgDate').value = rec.date;
+    document.getElementById('dmgNotes').value = rec.notes || '';
+    document.getElementById('dmgItemsWrap').innerHTML = '';
+    rec.items.forEach(function(it){ addDmgItemRow(it); });
+    document.getElementById('dmgFormTitle').textContent = 'تعديل سند رقم '+rec.voucherNo;
+    document.getElementById('dmgCancelEditBtn').style.display = 'inline-flex';
+    activateTab('damaged');
+    toast('يمكنك الآن تعديل بيانات السند');
+  }
+  else if(act === 'del'){
+    requirePassword(function(){
+      var cur = loadDmgRecords(profile).filter(function(r){ return r.id !== id; });
+      saveDmgRecords(profile, cur);
+      renderDmgRecords();
+      toast('تم حذف السند');
+    }, 'أدخل كلمة السر لتأكيد حذف السند '+rec.voucherNo+'.');
+  }
+});
+
+/* ================= RETURN TO MERCHANT TAB (مرتجع لتاجر) ================= */
+var VAT_RATE = 0.15;
+var retItemSeq = 0;
+var retEditingId = null;
+
+function retRecordsKey(p){ return 'awt_returns_'+p; }
+function retCounterKey(p){ return 'awt_ret_counter_'+p; }
+function loadRetRecords(p){ try{ return JSON.parse(localStorage.getItem(retRecordsKey(p))||'[]'); }catch(e){ return []; } }
+function saveRetRecords(p, arr){ localStorage.setItem(retRecordsKey(p), JSON.stringify(arr)); }
+function nextReturnNo(p){
+  var n = parseInt(localStorage.getItem(retCounterKey(p))||'0',10) + 1;
+  localStorage.setItem(retCounterKey(p), String(n));
+  return p + '-MRTJ-' + String(n).padStart(5,'0');
+}
+
+function addRetItemRow(prefill){
+  retItemSeq++;
+  var wrap = document.getElementById('retItemsWrap');
+  var row = document.createElement('div');
+  row.className = 'item-row';
+  row.style.gridTemplateColumns = '1.2fr .5fr .7fr .7fr auto';
+  var catOpts = '<option value="">اختر الصنف...</option>' + CATEGORIES.map(function(c){
+    return '<option value="'+esc(c)+'"'+(prefill&&prefill.category===c?' selected':'')+'>'+esc(c)+'</option>';
+  }).join('');
+  row.innerHTML =
+    '<div class="item-field"><label class="mobile-label">الصنف</label>' +
+      '<select class="ret-cat">'+catOpts+'</select></div>' +
+    '<div class="item-field"><label class="mobile-label">الكمية</label>' +
+      '<input type="number" class="ret-qty" min="1" placeholder="الكمية" value="'+(prefill?prefill.qty:'')+'"></div>' +
+    '<div class="item-field"><label class="mobile-label">سعر البيع</label>' +
+      '<input type="number" class="ret-sell" min="0" step="0.01" placeholder="سعر البيع" value="'+(prefill&&prefill.sellPrice!=null?prefill.sellPrice:'')+'"></div>' +
+    '<div class="item-field"><label class="mobile-label">سعر الشراء</label>' +
+      '<input type="number" class="ret-buy" min="0" step="0.01" placeholder="سعر الشراء" value="'+(prefill&&prefill.buyPrice!=null?prefill.buyPrice:'')+'"></div>' +
+    '<button type="button" class="del-row" title="حذف الصنف">✕<span class="del-row-text"> حذف الصنف</span></button>';
+  wrap.appendChild(row);
+  row.querySelector('.del-row').addEventListener('click', function(){
+    var items = wrap.querySelectorAll('.item-row');
+    if(items.length <= 1){ toast('يجب أن يوجد صنف واحد على الأقل'); return; }
+    row.remove();
+  });
+}
+document.getElementById('addRetItemBtn').addEventListener('click', function(){ addRetItemRow(); });
+
+function resetRetForm(){
+  retEditingId = null;
+  var profile = activeProfile();
+  document.getElementById('retBranchDisplay').value = profile ? whName(profile) : '';
+  document.getElementById('retSupplierName').value = '';
+  document.getElementById('retSupplierInvoice').value = '';
+  document.getElementById('retDate').value = todayStr();
+  document.getElementById('retNotes').value = '';
+  document.getElementById('retItemsWrap').innerHTML = '';
+  addRetItemRow();
+  document.getElementById('retFormTitle').textContent = 'سند مرتجع لتاجر جديد';
+  document.getElementById('retCancelEditBtn').style.display = 'none';
+}
+
+function collectRetItems(){
+  var items = [];
+  document.querySelectorAll('#retItemsWrap .item-row').forEach(function(row){
+    var cat = row.querySelector('.ret-cat').value;
+    var qty = parseInt(row.querySelector('.ret-qty').value, 10);
+    var sellPrice = parseFloat(row.querySelector('.ret-sell').value);
+    var buyPrice = parseFloat(row.querySelector('.ret-buy').value);
+    if(cat && qty > 0 && sellPrice >= 0 && !isNaN(sellPrice) && buyPrice >= 0 && !isNaN(buyPrice)){
+      items.push({category:cat, qty:qty, sellPrice:sellPrice, buyPrice:buyPrice});
+    }
+  });
+  return items;
+}
+
+function persistRetForm(){
+  var profile = activeProfile();
+  var date = document.getElementById('retDate').value || todayStr();
+  var supplierName = document.getElementById('retSupplierName').value.trim();
+  var supplierInvoice = document.getElementById('retSupplierInvoice').value.trim();
+  var notes = document.getElementById('retNotes').value.trim();
+  var items = collectRetItems();
+  if(!items.length){ toast('الرجاء إضافة صنف واحد على الأقل بكمية وأسعار صحيحة'); return null; }
+  if(!supplierName){ toast('الرجاء إدخال اسم المورد'); return null; }
+
+  var records = loadRetRecords(profile);
+  var rec;
+  if(retEditingId){
+    var idx = records.findIndex(function(r){ return r.id === retEditingId; });
+    if(idx > -1){
+      records[idx].date = date;
+      records[idx].supplierName = supplierName;
+      records[idx].supplierInvoice = supplierInvoice;
+      records[idx].items = items;
+      records[idx].notes = notes;
+      records[idx].editedAt = new Date().toISOString();
+      rec = records[idx];
+    }
+  } else {
+    rec = {
+      id: uid(), voucherNo: nextReturnNo(profile), date: date, warehouse: profile,
+      supplierName: supplierName, supplierInvoice: supplierInvoice,
+      items: items, notes: notes, createdAt: new Date().toISOString(), editedAt: null
+    };
+    records.push(rec);
+  }
+  saveRetRecords(profile, records);
+  return rec ? [rec] : null;
+}
+
+document.getElementById('retSaveBtn').addEventListener('click', function(){
+  var created = persistRetForm();
+  if(!created) return;
+  toast(retEditingId ? 'تم تحديث سند المرتجع بنجاح' : 'تم حفظ سند المرتجع بنجاح');
+  resetRetForm();
+  renderRetRecords();
+  activateTab('return');
+});
+document.getElementById('retCancelEditBtn').addEventListener('click', function(){ resetRetForm(); });
+
+function retItemCalc(it){
+  var beforeTax = Number(it.buyPrice||0) * Number(it.qty||0);
+  var vat = beforeTax * VAT_RATE;
+  var withVat = beforeTax + vat;
+  return {beforeTax:beforeTax, vat:vat, withVat:withVat};
+}
+
+function retVoucherHTML(rec){
+  var rows = rec.items.map(function(it, i){
+    var c = retItemCalc(it);
+    return '<tr><td>'+(i+1)+'</td><td>'+esc(it.category)+'</td><td>'+esc(it.qty)+' حبة</td>' +
+      '<td>'+money(it.sellPrice)+' / ريال</td><td>'+money(it.buyPrice)+' / ريال</td>' +
+      '<td>'+money(c.beforeTax)+'</td><td>'+money(c.vat)+'</td><td>'+money(c.withVat)+'</td></tr>';
+  }).join('');
+  var totalQty = rec.items.reduce(function(s,it){ return s+Number(it.qty||0); },0);
+  var totals = rec.items.reduce(function(s,it){
+    var c = retItemCalc(it);
+    s.beforeTax += c.beforeTax; s.vat += c.vat; s.withVat += c.withVat;
+    return s;
+  }, {beforeTax:0, vat:0, withVat:0});
+  var editedNote = rec.editedAt ? ('<span>(تم التعديل بتاريخ '+esc(rec.editedAt.slice(0,10))+')</span>') : '';
+  return (
+    '<div class="voucher-page">' +
+      '<div class="v-head">' +
+        '<div class="v-brand">' +
+          '<div class="pyr-mark"><div class="tier t1"></div><div class="tier t2"></div><div class="tier t3"></div></div>' +
+          '<div><h2>أصالة الهرم</h2><p>سند مرتجع لتاجر</p></div>' +
+        '</div>' +
+        '<div style="text-align:left;font-size:11px;color:#5C6459;">رقم السند<br><b style="font-size:14px;color:#16302B;">'+esc(rec.voucherNo)+'</b></div>' +
+      '</div>' +
+      '<div class="v-title">سند مرتجع لتاجر</div>' +
+      '<div class="v-meta">' +
+        '<div><b>الفرع</b>'+esc(whName(rec.warehouse))+'</div>' +
+        '<div><b>التاريخ</b>'+fmtDate(rec.date)+'</div>' +
+        '<div><b>اسم المورد</b>'+esc(rec.supplierName)+'</div>' +
+        '<div><b>رقم فاتورة المورد</b>'+esc(rec.supplierInvoice||'—')+'</div>' +
+        '<div><b>حالة السند</b>'+(rec.editedAt?'معدَّل '+editedNote:'أصلي')+'</div>' +
+      '</div>' +
+      '<table class="v-table"><thead><tr><th>م</th><th>الصنف</th><th>الكمية</th><th>سعر البيع</th><th>سعر الشراء</th><th>الإجمالي قبل الضريبة</th><th>الضريبة المضافة</th><th>الإجمالي شامل الضريبة</th></tr></thead>' +
+      '<tbody>'+rows+'<tr><td colspan="2">الإجمالي</td><td>'+totalQty+'</td><td></td><td></td><td>'+money(totals.beforeTax)+'</td><td>'+money(totals.vat)+'</td><td>'+money(totals.withVat)+'</td></tr></tbody></table>' +
+      (rec.notes ? '<div class="v-notes"><b>ملاحظات عامة:</b> '+esc(rec.notes)+'</div>' : '') +
+      '<div class="v-sign">' +
+        '<div>توقيع المستلم من المورد<div class="line">الاسم / التوقيع</div></div>' +
+        '<div>توقيع مسؤول الفرع<div class="line">الاسم / التوقيع</div></div>' +
+      '</div>' +
+      '<div class="v-foot"><span>الدعم الفني: م. صلاح غالب — 0556321436</span><span>صادر من: '+esc(whName(rec.warehouse))+'</span></div>' +
+    '</div>'
+  );
+}
+
+function retWaSummary(records){
+  return 'سندات مرتجع لتاجر - أصالة الهرم:\n' + records.map(function(r){
+    return 'سند '+r.voucherNo+' | المورد: '+r.supplierName+' | '+fmtDate(r.date);
+  }).join('\n');
+}
+
+document.getElementById('retPdfBtn').addEventListener('click', function(){
+  var created = persistRetForm();
+  if(!created) return;
+  resetRetForm();
+  renderRetRecords();
+  viewOrDownloadPdf(created, retVoucherHTML, 'AlHaram-Return');
+});
+document.getElementById('retWaBtn').addEventListener('click', function(){
+  var created = persistRetForm();
+  if(!created) return;
+  resetRetForm();
+  renderRetRecords();
+  shareOrDownloadPdf(created, retVoucherHTML, 'AlHaram-Return', retWaSummary);
+});
+
+function renderRetRecords(){
+  var profile = activeProfile();
+  if(!profile) return;
+  var records = loadRetRecords(profile).slice().sort(function(a,b){
+    return (b.date+b.createdAt) > (a.date+a.createdAt) ? 1 : -1;
+  });
+  var tbody = document.getElementById('retRecordsBody');
+  tbody.innerHTML = '';
+  document.getElementById('retRecordsEmpty').style.display = records.length ? 'none' : 'block';
+  records.forEach(function(r){
+    var totals = r.items.reduce(function(s,it){
+      var c = retItemCalc(it);
+      s.withVat += c.withVat;
+      return s;
+    }, {withVat:0});
+    var catsText = r.items.map(function(it){ return it.category+' ('+it.qty+')'; }).join('، ');
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>'+esc(r.voucherNo)+(r.editedAt?' <span class="badge badge-out">معدَّل</span>':'')+'</td>' +
+      '<td>'+fmtDate(r.date)+'</td>' +
+      '<td>'+esc(r.supplierName)+'</td>' +
+      '<td title="'+esc(catsText)+'">'+esc(catsText.length>28?catsText.slice(0,28)+'…':catsText)+'</td>' +
+      '<td>'+money(totals.withVat)+'</td>' +
+      '<td title="'+esc(r.notes)+'">'+esc((r.notes||'—').slice(0,18))+'</td>' +
+      '<td><div class="row-actions">' +
+        '<button class="mini-btn" data-act="pdf" data-id="'+r.id+'">طباعة</button>' +
+        '<button class="mini-btn" data-act="wa" data-id="'+r.id+'">واتساب</button>' +
+        '<button class="mini-btn" data-act="edit" data-id="'+r.id+'">تعديل</button>' +
+        '<button class="mini-btn danger" data-act="del" data-id="'+r.id+'">حذف</button>' +
+      '</div></td>';
+    tbody.appendChild(tr);
+  });
+}
+document.getElementById('retRecordsBody').addEventListener('click', function(e){
+  var btn = e.target.closest('button[data-act]');
+  if(!btn) return;
+  var id = btn.dataset.id, act = btn.dataset.act;
+  var profile = activeProfile();
+  var records = loadRetRecords(profile);
+  var rec = records.find(function(r){ return r.id === id; });
+  if(!rec) return;
+  if(act === 'pdf'){ viewOrDownloadPdf([rec], retVoucherHTML, 'AlHaram-Return'); }
+  else if(act === 'wa'){ shareOrDownloadPdf([rec], retVoucherHTML, 'AlHaram-Return', retWaSummary); }
+  else if(act === 'edit'){
+    retEditingId = id;
+    document.getElementById('retBranchDisplay').value = whName(rec.warehouse);
+    document.getElementById('retSupplierName').value = rec.supplierName || '';
+    document.getElementById('retSupplierInvoice').value = rec.supplierInvoice || '';
+    document.getElementById('retDate').value = rec.date;
+    document.getElementById('retNotes').value = rec.notes || '';
+    document.getElementById('retItemsWrap').innerHTML = '';
+    rec.items.forEach(function(it){ addRetItemRow(it); });
+    document.getElementById('retFormTitle').textContent = 'تعديل سند رقم '+rec.voucherNo;
+    document.getElementById('retCancelEditBtn').style.display = 'inline-flex';
+    activateTab('return');
+    toast('يمكنك الآن تعديل بيانات السند');
+  }
+  else if(act === 'del'){
+    requirePassword(function(){
+      var cur = loadRetRecords(profile).filter(function(r){ return r.id !== id; });
+      saveRetRecords(profile, cur);
+      renderRetRecords();
+      toast('تم حذف السند');
+    }, 'أدخل كلمة السر لتأكيد حذف السند '+rec.voucherNo+'.');
+  }
+});
+
+/* ================= INIT ================= */
+function renderAll(){
+  renderHeader();
+  renderStats();
+  resetForm();
+  renderRecords();
+  resetConfirmForm();
+  renderConfirmRecords();
+  resetDiscForm();
+  renderDiscRecords();
+  resetDmgForm();
+  renderDmgRecords();
+  resetRetForm();
+  renderRetRecords();
+  renderBackupTab();
+}
+
+/* ================= ENTER = NEXT FIELD ================= */
+document.addEventListener('keydown', function(e){
+  if(e.key !== 'Enter') return;
+  var t = e.target;
+  if(!t || (t.tagName !== 'INPUT' && t.tagName !== 'SELECT')) return;
+  if(t.type === 'checkbox' || t.type === 'radio') return;
+  e.preventDefault();
+  var container = t.closest('.modal-box') || t.closest('.tab-panel.active') || t.closest('.tab-panel') || document.body;
+  var focusables = Array.prototype.slice.call(
+    container.querySelectorAll('input, select, textarea, button')
+  ).filter(function(el){
+    return !el.disabled && el.offsetParent !== null;
+  });
+  var idx = focusables.indexOf(t);
+  if(idx > -1 && idx < focusables.length - 1){
+    var next = focusables[idx+1];
+    next.focus();
+    if(typeof next.select === 'function' && (next.tagName === 'INPUT')) {
+      try{ next.select(); }catch(_e){}
+    }
+  } else {
+    t.blur();
+  }
+});
+
+/* ================= INIT BOOTSTRAP ================= */
+loadCategories();
+loadWarehouses();
+document.getElementById('transferDate').value = todayStr();
+initSetup();
+
+})();
+</script>
+</body>
+</html>
