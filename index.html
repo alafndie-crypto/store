@@ -2365,12 +2365,15 @@ document.getElementById('wipeBtn').addEventListener('click', function(){
   if(!profile) return;
   requirePassword(function(){
     localStorage.removeItem(recordsKey(profile));
-    localStorage.removeItem(counterKey(profile));
+    /* ملاحظة مهمة: لا نحذف counterKey(profile) عمدًا. عدّاد ترقيم السندات
+     * يجب أن يستمر بالتصاعد دائمًا ولا يعود للبداية أبدًا، حتى لو حُذفت
+     * كل السجلات دفعة واحدة من هنا. الفاتورة التالية ستأخذ الرقم الذي
+     * يلي آخر رقم صدر فعليًا، مهما تكررت عملية الحذف. */
     localStorage.removeItem('awt_setup');
     setup = null;
     toast('تم حذف السجلات، سيتم إعادة تشغيل البرنامج من البداية...');
     setTimeout(function(){ initSetup(); }, 900);
-  }, 'سيتم حذف جميع سندات مستودع "'+WAREHOUSES[profile].name+'" نهائيًا، وإعادة البرنامج لشاشة اختيار المستودع من جديد. أدخل كلمة السر للتأكيد.');
+  }, 'سيتم حذف جميع سندات مستودع "'+WAREHOUSES[profile].name+'" نهائيًا، وإعادة البرنامج لشاشة اختيار المستودع من جديد (ترقيم السندات القادمة سيستمر تصاعديًا ولن يعود من البداية). أدخل كلمة السر للتأكيد.');
 });
 
 /* ================= DISCOUNT TAB (التخفيض) ================= */
