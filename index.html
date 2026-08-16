@@ -185,9 +185,11 @@
   .dest-block .dest-top .date-field{flex:0 0 130px;max-width:none;}
   .dest-block .dest-top .date-field input{padding:10px 8px;font-size:13px;}
   @media(max-width:640px){
-    .dest-block .dest-top{flex-direction:column;align-items:stretch;gap:10px;}
-    .dest-block .dest-top .field{min-width:0;}
-    .dest-block .dest-top .date-field{flex:none;max-width:150px;}
+    .dest-block .dest-top{flex-direction:row;flex-wrap:nowrap;align-items:flex-end;gap:8px;}
+    .dest-block .dest-top .field{min-width:0;flex:1 1 auto;}
+    .dest-block .dest-top .field select{font-size:13px;padding:10px 8px;}
+    .dest-block .dest-top .date-field{flex:0 0 122px;max-width:122px;margin-bottom:0;}
+    .dest-block .dest-top .date-field input{padding:9px 6px;font-size:12px;}
   }
   .remove-dest{
     background:var(--danger-bg);color:var(--danger);border:none;border-radius:8px;
@@ -210,10 +212,11 @@
   @media(max-width:640px){
     .item-row-labels{display:none;}
     .item-row{
-      grid-template-columns:1fr 1fr !important;
-      background:#FCFBF7;padding:12px;gap:8px 10px;
+      grid-template-columns:1.3fr .75fr .85fr !important;
+      background:#FCFBF7;padding:12px;gap:8px 8px;
     }
-    .item-field .mobile-label{display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);}
+    .item-field .mobile-label{display:block;font-size:10px;font-weight:700;color:var(--ink-soft);}
+    .item-field select,.item-field input{font-size:12.5px;padding:8px 6px;}
     .item-field:last-of-type{grid-column:1 / -1;} /* حقل الملاحظة يأخذ العرض الكامل */
     .item-row .del-row{grid-column:1 / -1;width:100%;height:44px;font-size:13.5px;font-weight:700;}
     .del-row-text{display:inline;}
@@ -338,7 +341,7 @@
   .v-head .v-brand{display:flex;align-items:center;gap:10px;}
   .v-head h2{font-family:'Cairo',sans-serif;margin:0;font-size:19px;color:#16302B;}
   .v-head p{margin:2px 0 0;font-size:11px;color:#5C6459;}
-  .v-title{text-align:center;font-family:'Cairo',sans-serif;font-weight:800;font-size:15px;color:#16302B;margin:14px 0;}
+  .v-title{text-align:center;font-family:'Cairo',sans-serif;font-weight:800;font-size:12px;color:#16302B;margin:12px 0;}
   .v-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;background:#ECE8DD;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:12.5px;}
   .v-meta div b{display:block;color:#5C6459;font-size:10.5px;font-weight:700;margin-bottom:2px;}
   .v-route{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px;font-family:'Cairo',sans-serif;font-weight:800;font-size:14px;color:#16302B;}
@@ -441,6 +444,7 @@
   <button data-tab="discount">التخفيض</button>
   <button data-tab="damaged">التالف</button>
   <button data-tab="return">مرتجع لتاجر</button>
+  <button data-tab="shortage">نقص بضاعة</button>
   <button data-tab="backup">الإعدادات</button>
 </nav>
 </div>
@@ -724,6 +728,70 @@
     </div>
   </section>
 
+  <!-- ===================== TAB: SHORTAGE (نقص بضاعة) ===================== -->
+  <section class="tab-panel" id="tab-shortage">
+    <div class="card">
+      <h2 id="shortFormTitle">إشعار نقص بضاعة جديد</h2>
+      <p class="hint">سجّل الأصناف التي وصلت ناقصة عن فاتورة المورد. الإجمالي (الكمية × السعر) يُحسب تلقائيًا لكل صنف.</p>
+
+      <div class="row2">
+        <div class="field">
+          <label>اسم الفرع</label>
+          <input type="text" id="shortBranchDisplay" disabled>
+        </div>
+        <div class="field">
+          <label>اسم المورد</label>
+          <input type="text" id="shortSupplierName" placeholder="اسم المورد">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>رقم الفاتورة</label>
+          <input type="text" id="shortInvoiceNo" placeholder="رقم فاتورة المورد">
+        </div>
+        <div class="field date-field" style="max-width:none;">
+          <label>التاريخ</label>
+          <input type="date" id="shortDate">
+        </div>
+      </div>
+
+      <div class="item-row-labels" id="shortItemLabels" style="grid-template-columns:.8fr 1.1fr .5fr .55fr .65fr 1fr auto;">
+        <span>رقم الصنف</span><span>اسم الصنف</span><span>العدد</span><span>الوحدة</span><span>السعر</span><span>ملاحظة</span><span></span>
+      </div>
+      <div id="shortItemsWrap"></div>
+      <button class="add-row-btn" id="addShortItemBtn" type="button">+ إضافة صنف</button>
+
+      <div class="field" style="margin-top:14px;">
+        <label>ملاحظات عامة على الإشعار (اختياري)</label>
+        <textarea id="shortNotes" placeholder="أي تفاصيل إضافية عن النقص..."></textarea>
+      </div>
+
+      <div class="actions-bar">
+        <button class="btn btn-primary" id="shortSaveBtn">💾 حفظ الإشعار</button>
+        <button class="btn btn-ghost" id="shortPdfBtn">🖨️ طباعة</button>
+        <button class="btn btn-gold" id="shortWaBtn">📤 إرسال واتساب</button>
+        <button class="btn btn-ghost" id="shortCancelEditBtn" style="display:none;">إلغاء التعديل</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>سجل إشعارات نقص البضاعة</h2>
+      <p class="hint">السجلات الخاصة بمستودعك الحالي فقط، محفوظة على هذا الجهاز.</p>
+      <div class="table-wrap">
+        <table class="records" id="shortRecordsTable">
+          <thead><tr>
+            <th>رقم السند</th><th>التاريخ</th><th>المورد</th><th>رقم الفاتورة</th><th>الأصناف</th><th>الإجمالي (ر.س)</th><th>ملاحظات</th><th>إجراءات</th>
+          </tr></thead>
+          <tbody id="shortRecordsBody"></tbody>
+        </table>
+      </div>
+      <div id="shortRecordsEmpty" class="empty-state" style="display:none;">
+        <div class="pyr-mark"><div class="tier t1"></div><div class="tier t2"></div><div class="tier t3"></div></div>
+        <p>لا توجد إشعارات نقص بضاعة مسجلة بعد.</p>
+      </div>
+    </div>
+  </section>
+
   <!-- ===================== TAB: BACKUP ===================== -->
   <section class="tab-panel" id="tab-backup">
     <div class="card">
@@ -792,7 +860,7 @@
 <div class="toast" id="toast"></div>
 
 <footer class="support-bar">
-  <span>🛠️ الدعم الفني: <b>م. صلاح غالب</b></span>
+  <span>🛠️ الدعم الفني: <b>المهندس صلاح غالب</b></span>
   <a href="tel:0556321436">0556321436</a>
 </footer>
 
@@ -1143,6 +1211,7 @@ function activateTab(name){
   if(name === 'discount') renderDiscRecords();
   if(name === 'damaged') renderDmgRecords();
   if(name === 'return') renderRetRecords();
+  if(name === 'shortage') renderShortRecords();
   if(name === 'backup') renderBackupTab();
 }
 document.querySelectorAll('nav.tabs button').forEach(function(b){
@@ -1410,7 +1479,7 @@ function voucherHTML(rec){
           '<div class="pyr-mark"><div class="tier t1"></div><div class="tier t2"></div><div class="tier t3"></div></div>' +
           '<div><h2>أصالة الهرم</h2><p>نظام التحويلات المخزنية بين الفروع</p></div>' +
         '</div>' +
-        '<div style="text-align:left;font-size:11px;color:#5C6459;">رقم السند<br><b style="font-size:14px;color:#16302B;">'+esc(rec.voucherNo)+'</b></div>' +
+        '<div style="text-align:left;font-size:9px;color:#5C6459;">رقم السند<br><b style="font-size:11px;color:#16302B;">'+esc(rec.voucherNo)+'</b></div>' +
       '</div>' +
       '<div class="v-title">سند نقل بضاعة بين المخازن</div>' +
       '<div class="v-meta">' +
@@ -1430,7 +1499,7 @@ function voucherHTML(rec){
         '<div>توقيع المُسلِّم<div class="line">الاسم / التوقيع</div></div>' +
         '<div>توقيع المستلم<div class="line">الاسم / التوقيع</div></div>' +
       '</div>' +
-      '<div class="v-foot"><span>الدعم الفني: م. صلاح غالب — 0556321436</span><span>صادر من: '+esc(WAREHOUSES[profile].name)+'</span></div>' +
+      '<div class="v-foot"><span>الدعم الفني: المهندس صلاح غالب — 0556321436</span><span>صادر من: '+esc(WAREHOUSES[profile].name)+'</span></div>' +
     '</div>'
   );
 }
@@ -1986,7 +2055,7 @@ function confirmVoucherHTML(rec){
           '<div class="pyr-mark"><div class="tier t1"></div><div class="tier t2"></div><div class="tier t3"></div></div>' +
           '<div><h2>أصالة الهرم</h2><p>إيصال تأكيد استلام تحويل</p></div>' +
         '</div>' +
-        '<div style="text-align:left;font-size:11px;color:#5C6459;">السند المرجعي<br><b style="font-size:14px;color:#16302B;">'+esc(rec.voucherRef||'—')+'</b></div>' +
+        '<div style="text-align:left;font-size:9px;color:#5C6459;">السند المرجعي<br><b style="font-size:11px;color:#16302B;">'+esc(rec.voucherRef||'—')+'</b></div>' +
       '</div>' +
       '<div class="v-title">إيصال تأكيد استلام بضاعة</div>' +
       '<div class="v-meta">' +
@@ -2005,7 +2074,7 @@ function confirmVoucherHTML(rec){
         '<div>توقيع المستلم<div class="line">الاسم / التوقيع</div></div>' +
         '<div>توقيع المُرسِل (بعد الاطلاع)<div class="line">الاسم / التوقيع</div></div>' +
       '</div>' +
-      '<div class="v-foot"><span>الدعم الفني: م. صلاح غالب — 0556321436</span><span>مستلِم في: '+esc(WAREHOUSES[profile].name)+'</span></div>' +
+      '<div class="v-foot"><span>الدعم الفني: المهندس صلاح غالب — 0556321436</span><span>مستلِم في: '+esc(WAREHOUSES[profile].name)+'</span></div>' +
     '</div>'
   );
 }
@@ -2504,7 +2573,7 @@ function discVoucherHTML(rec){
           '<div class="pyr-mark"><div class="tier t1"></div><div class="tier t2"></div><div class="tier t3"></div></div>' +
           '<div><h2>أصالة الهرم</h2><p>سند تخفيض أسعار</p></div>' +
         '</div>' +
-        '<div style="text-align:left;font-size:11px;color:#5C6459;">رقم السند<br><b style="font-size:14px;color:#16302B;">'+esc(rec.voucherNo)+'</b></div>' +
+        '<div style="text-align:left;font-size:9px;color:#5C6459;">رقم السند<br><b style="font-size:11px;color:#16302B;">'+esc(rec.voucherNo)+'</b></div>' +
       '</div>' +
       '<div class="v-title">سند تخفيض أسعار</div>' +
       '<div class="v-meta">' +
@@ -2515,7 +2584,7 @@ function discVoucherHTML(rec){
       '<table class="v-table"><thead><tr><th>م</th><th>الصنف</th><th>الكمية</th><th>السعر السابق</th><th>السعر الحالي</th><th>قيمة التخفيض</th><th>ملاحظات</th></tr></thead>' +
       '<tbody>'+rows+'<tr><td colspan="2">الإجمالي</td><td>'+totalQty+'</td><td></td><td></td><td>'+money(totalDiff)+'</td><td></td></tr></tbody></table>' +
       (rec.notes ? '<div class="v-notes"><b>ملاحظات عامة:</b> '+esc(rec.notes)+'</div>' : '') +
-      '<div class="v-foot"><span>الدعم الفني: م. صلاح غالب — 0556321436</span><span>صادر من: '+esc(whName(rec.warehouse))+'</span></div>' +
+      '<div class="v-foot"><span>الدعم الفني: المهندس صلاح غالب — 0556321436</span><span>صادر من: '+esc(whName(rec.warehouse))+'</span></div>' +
     '</div>'
   );
 }
@@ -2720,7 +2789,7 @@ function dmgVoucherHTML(rec){
           '<div class="pyr-mark"><div class="tier t1"></div><div class="tier t2"></div><div class="tier t3"></div></div>' +
           '<div><h2>أصالة الهرم</h2><p>سند تالف</p></div>' +
         '</div>' +
-        '<div style="text-align:left;font-size:11px;color:#5C6459;">رقم السند<br><b style="font-size:14px;color:#16302B;">'+esc(rec.voucherNo)+'</b></div>' +
+        '<div style="text-align:left;font-size:9px;color:#5C6459;">رقم السند<br><b style="font-size:11px;color:#16302B;">'+esc(rec.voucherNo)+'</b></div>' +
       '</div>' +
       '<div class="v-title">سند تالف</div>' +
       '<div class="v-meta">' +
@@ -2731,7 +2800,7 @@ function dmgVoucherHTML(rec){
       '<table class="v-table"><thead><tr><th>م</th><th>الصنف</th><th>الكمية</th><th>السعر</th><th>القيمة</th><th>ملاحظات</th></tr></thead>' +
       '<tbody>'+rows+'<tr><td colspan="2">الإجمالي</td><td>'+totalQty+'</td><td></td><td>'+money(totalValue)+'</td><td></td></tr></tbody></table>' +
       (rec.notes ? '<div class="v-notes"><b>ملاحظات عامة:</b> '+esc(rec.notes)+'</div>' : '') +
-      '<div class="v-foot"><span>الدعم الفني: م. صلاح غالب — 0556321436</span><span>صادر من: '+esc(whName(rec.warehouse))+'</span></div>' +
+      '<div class="v-foot"><span>الدعم الفني: المهندس صلاح غالب — 0556321436</span><span>صادر من: '+esc(whName(rec.warehouse))+'</span></div>' +
     '</div>'
   );
 }
@@ -2840,12 +2909,9 @@ function addRetItemRow(prefill){
   var row = document.createElement('div');
   row.className = 'item-row';
   row.style.gridTemplateColumns = '1.2fr .5fr .7fr .7fr auto';
-  var catOpts = '<option value="">اختر الصنف...</option>' + CATEGORIES.map(function(c){
-    return '<option value="'+esc(c)+'"'+(prefill&&prefill.category===c?' selected':'')+'>'+esc(c)+'</option>';
-  }).join('');
   row.innerHTML =
     '<div class="item-field"><label class="mobile-label">الصنف</label>' +
-      '<select class="ret-cat">'+catOpts+'</select></div>' +
+      '<input type="text" class="ret-cat" placeholder="اسم الصنف" value="'+esc(prefill?prefill.category:'')+'"></div>' +
     '<div class="item-field"><label class="mobile-label">الكمية</label>' +
       '<input type="number" class="ret-qty" min="1" placeholder="الكمية" value="'+(prefill?prefill.qty:'')+'"></div>' +
     '<div class="item-field"><label class="mobile-label">سعر البيع</label>' +
@@ -2879,7 +2945,7 @@ function resetRetForm(){
 function collectRetItems(){
   var items = [];
   document.querySelectorAll('#retItemsWrap .item-row').forEach(function(row){
-    var cat = row.querySelector('.ret-cat').value;
+    var cat = row.querySelector('.ret-cat').value.trim();
     var qty = parseInt(row.querySelector('.ret-qty').value, 10);
     var sellPrice = parseFloat(row.querySelector('.ret-sell').value);
     var buyPrice = parseFloat(row.querySelector('.ret-buy').value);
@@ -2963,7 +3029,7 @@ function retVoucherHTML(rec){
           '<div class="pyr-mark"><div class="tier t1"></div><div class="tier t2"></div><div class="tier t3"></div></div>' +
           '<div><h2>أصالة الهرم</h2><p>سند مرتجع لتاجر</p></div>' +
         '</div>' +
-        '<div style="text-align:left;font-size:11px;color:#5C6459;">رقم السند<br><b style="font-size:14px;color:#16302B;">'+esc(rec.voucherNo)+'</b></div>' +
+        '<div style="text-align:left;font-size:9px;color:#5C6459;">رقم السند<br><b style="font-size:11px;color:#16302B;">'+esc(rec.voucherNo)+'</b></div>' +
       '</div>' +
       '<div class="v-title">سند مرتجع لتاجر</div>' +
       '<div class="v-meta">' +
@@ -2980,7 +3046,7 @@ function retVoucherHTML(rec){
         '<div>توقيع المستلم من المورد<div class="line">الاسم / التوقيع</div></div>' +
         '<div>توقيع مسؤول الفرع<div class="line">الاسم / التوقيع</div></div>' +
       '</div>' +
-      '<div class="v-foot"><span>الدعم الفني: م. صلاح غالب — 0556321436</span><span>صادر من: '+esc(whName(rec.warehouse))+'</span></div>' +
+      '<div class="v-foot"><span>الدعم الفني: المهندس صلاح غالب — 0556321436</span><span>صادر من: '+esc(whName(rec.warehouse))+'</span></div>' +
     '</div>'
   );
 }
@@ -3073,6 +3139,253 @@ document.getElementById('retRecordsBody').addEventListener('click', function(e){
   }
 });
 
+/* ================= SHORTAGE TAB (نقص بضاعة) ================= */
+var shortItemSeq = 0;
+var shortEditingId = null;
+
+function shortRecordsKey(p){ return 'awt_shortages_'+p; }
+function shortCounterKey(p){ return 'awt_short_counter_'+p; }
+function loadShortRecords(p){ try{ return JSON.parse(localStorage.getItem(shortRecordsKey(p))||'[]'); }catch(e){ return []; } }
+function saveShortRecords(p, arr){ localStorage.setItem(shortRecordsKey(p), JSON.stringify(arr)); }
+function nextShortageNo(p){
+  var shortStart = getInvoiceStartNumber();
+  var n = parseInt(localStorage.getItem(shortCounterKey(p)) || String(shortStart - 1), 10) + 1;
+  localStorage.setItem(shortCounterKey(p), String(n));
+  return p + '-NQS-' + String(n).padStart(5,'0');
+}
+
+function addShortItemRow(prefill){
+  shortItemSeq++;
+  var wrap = document.getElementById('shortItemsWrap');
+  var row = document.createElement('div');
+  row.className = 'item-row';
+  row.style.gridTemplateColumns = '.8fr 1.1fr .5fr .55fr .65fr 1fr auto';
+  row.innerHTML =
+    '<div class="item-field"><label class="mobile-label">رقم الصنف</label>' +
+      '<input type="text" class="short-itemno" placeholder="رقم الصنف" value="'+esc(prefill?prefill.itemNo:'')+'"></div>' +
+    '<div class="item-field"><label class="mobile-label">اسم الصنف</label>' +
+      '<input type="text" class="short-itemname" placeholder="اسم الصنف" value="'+esc(prefill?prefill.itemName:'')+'"></div>' +
+    '<div class="item-field"><label class="mobile-label">العدد</label>' +
+      '<input type="number" class="short-qty" min="1" placeholder="العدد" value="'+(prefill?prefill.qty:'')+'"></div>' +
+    '<div class="item-field"><label class="mobile-label">الوحدة</label>' +
+      '<select class="short-unit">' +
+        '<option value="piece"'+(!prefill||prefill.unit==='piece'?' selected':'')+'>حبة</option>' +
+        '<option value="dozen"'+(prefill&&prefill.unit==='dozen'?' selected':'')+'>درزن</option>' +
+      '</select></div>' +
+    '<div class="item-field"><label class="mobile-label">السعر</label>' +
+      '<input type="number" class="short-price" min="0" step="0.01" placeholder="السعر" value="'+(prefill&&prefill.price!=null?prefill.price:'')+'"></div>' +
+    '<div class="item-field"><label class="mobile-label">ملاحظة</label>' +
+      '<input type="text" class="short-note" placeholder="ملاحظة (اختياري)" value="'+esc(prefill?prefill.note:'')+'"></div>' +
+    '<button type="button" class="del-row" title="حذف الصنف">✕<span class="del-row-text"> حذف الصنف</span></button>';
+  wrap.appendChild(row);
+  row.querySelector('.del-row').addEventListener('click', function(){
+    var items = wrap.querySelectorAll('.item-row');
+    if(items.length <= 1){ toast('يجب أن يوجد صنف واحد على الأقل'); return; }
+    row.remove();
+  });
+}
+document.getElementById('addShortItemBtn').addEventListener('click', function(){ addShortItemRow(); });
+
+function resetShortForm(){
+  shortEditingId = null;
+  var profile = activeProfile();
+  document.getElementById('shortBranchDisplay').value = profile ? whName(profile) : '';
+  document.getElementById('shortSupplierName').value = '';
+  document.getElementById('shortInvoiceNo').value = '';
+  document.getElementById('shortDate').value = todayStr();
+  document.getElementById('shortNotes').value = '';
+  document.getElementById('shortItemsWrap').innerHTML = '';
+  addShortItemRow();
+  document.getElementById('shortFormTitle').textContent = 'إشعار نقص بضاعة جديد';
+  document.getElementById('shortCancelEditBtn').style.display = 'none';
+}
+
+function collectShortItems(){
+  var items = [];
+  document.querySelectorAll('#shortItemsWrap .item-row').forEach(function(row){
+    var itemNo = row.querySelector('.short-itemno').value.trim();
+    var itemName = row.querySelector('.short-itemname').value.trim();
+    var qty = parseInt(row.querySelector('.short-qty').value, 10);
+    var unit = row.querySelector('.short-unit').value || 'piece';
+    var price = parseFloat(row.querySelector('.short-price').value);
+    var note = row.querySelector('.short-note').value.trim();
+    if(itemNo && qty > 0 && price >= 0 && !isNaN(price)){
+      items.push({itemNo:itemNo, itemName:itemName, qty:qty, unit:unit, price:price, note:note});
+    }
+  });
+  return items;
+}
+
+function persistShortForm(){
+  var profile = activeProfile();
+  var date = document.getElementById('shortDate').value || todayStr();
+  var supplierName = document.getElementById('shortSupplierName').value.trim();
+  var invoiceNo = document.getElementById('shortInvoiceNo').value.trim();
+  var notes = document.getElementById('shortNotes').value.trim();
+  var items = collectShortItems();
+  if(!items.length){ toast('الرجاء إضافة صنف واحد على الأقل برقم صنف وعدد وسعر صحيحين'); return null; }
+  if(!supplierName){ toast('الرجاء إدخال اسم المورد'); return null; }
+
+  var records = loadShortRecords(profile);
+  var rec;
+  if(shortEditingId){
+    var idx = records.findIndex(function(r){ return r.id === shortEditingId; });
+    if(idx > -1){
+      records[idx].date = date;
+      records[idx].supplierName = supplierName;
+      records[idx].invoiceNo = invoiceNo;
+      records[idx].items = items;
+      records[idx].notes = notes;
+      records[idx].editedAt = new Date().toISOString();
+      rec = records[idx];
+    }
+  } else {
+    rec = {
+      id: uid(), voucherNo: nextShortageNo(profile), date: date, warehouse: profile,
+      supplierName: supplierName, invoiceNo: invoiceNo,
+      items: items, notes: notes, createdAt: new Date().toISOString(), editedAt: null
+    };
+    records.push(rec);
+  }
+  saveShortRecords(profile, records);
+  return rec ? [rec] : null;
+}
+
+document.getElementById('shortSaveBtn').addEventListener('click', function(){
+  var created = persistShortForm();
+  if(!created) return;
+  toast(shortEditingId ? 'تم تحديث إشعار النقص بنجاح' : 'تم حفظ إشعار النقص بنجاح');
+  resetShortForm();
+  renderShortRecords();
+  activateTab('shortage');
+});
+document.getElementById('shortCancelEditBtn').addEventListener('click', function(){ resetShortForm(); });
+
+function shortItemTotal(it){ return Number(it.price||0) * Number(it.qty||0); }
+
+function shortVoucherHTML(rec){
+  var rows = rec.items.map(function(it, i){
+    return '<tr><td>'+(i+1)+'</td><td>'+esc(it.itemNo)+'</td><td>'+esc(it.itemName||'—')+'</td><td>'+esc(it.qty)+' '+unitLabel(it.unit)+'</td>' +
+      '<td>'+money(it.price)+' / ريال</td><td>'+money(shortItemTotal(it))+'</td>' +
+      '<td>'+esc(it.note||'—')+'</td></tr>';
+  }).join('');
+  var totalQty = rec.items.reduce(function(s,it){ return s+Number(it.qty||0); },0);
+  var totalValue = rec.items.reduce(function(s,it){ return s+shortItemTotal(it); },0);
+  var editedNote = rec.editedAt ? ('<span>(تم التعديل بتاريخ '+esc(rec.editedAt.slice(0,10))+')</span>') : '';
+  return (
+    '<div class="voucher-page">' +
+      '<div class="v-head">' +
+        '<div class="v-brand">' +
+          '<div class="pyr-mark"><div class="tier t1"></div><div class="tier t2"></div><div class="tier t3"></div></div>' +
+          '<div><h2>أصالة الهرم</h2><p>إشعار نقص بضاعة</p></div>' +
+        '</div>' +
+        '<div style="text-align:left;font-size:9px;color:#5C6459;">رقم السند<br><b style="font-size:11px;color:#16302B;">'+esc(rec.voucherNo)+'</b></div>' +
+      '</div>' +
+      '<div class="v-title">إشعار نقص بضاعة</div>' +
+      '<div class="v-meta">' +
+        '<div><b>الفرع</b>'+esc(whName(rec.warehouse))+'</div>' +
+        '<div><b>التاريخ</b>'+fmtDate(rec.date)+'</div>' +
+        '<div><b>اسم المورد</b>'+esc(rec.supplierName)+'</div>' +
+        '<div><b>رقم الفاتورة</b>'+esc(rec.invoiceNo||'—')+'</div>' +
+        '<div><b>حالة الإشعار</b>'+(rec.editedAt?'معدَّل '+editedNote:'أصلي')+'</div>' +
+      '</div>' +
+      '<table class="v-table"><thead><tr><th>م</th><th>رقم الصنف</th><th>اسم الصنف</th><th>العدد</th><th>السعر</th><th>الإجمالي</th><th>ملاحظة</th></tr></thead>' +
+      '<tbody>'+rows+'<tr><td colspan="3">الإجمالي</td><td>'+totalQty+'</td><td></td><td>'+money(totalValue)+'</td><td></td></tr></tbody></table>' +
+      (rec.notes ? '<div class="v-notes"><b>ملاحظات عامة:</b> '+esc(rec.notes)+'</div>' : '') +
+      '<div class="v-sign">' +
+        '<div>توقيع مستلم البضاعة<div class="line">الاسم / التوقيع</div></div>' +
+        '<div>توقيع مسؤول الفرع<div class="line">الاسم / التوقيع</div></div>' +
+      '</div>' +
+      '<div class="v-foot"><span>الدعم الفني: المهندس صلاح غالب — 0556321436</span><span>صادر من: '+esc(whName(rec.warehouse))+'</span></div>' +
+    '</div>'
+  );
+}
+
+function shortWaSummary(records){
+  return 'إشعارات نقص بضاعة - أصالة الهرم:\n' + records.map(function(r){
+    return 'سند '+r.voucherNo+' | المورد: '+r.supplierName+' | فاتورة: '+(r.invoiceNo||'—')+' | '+fmtDate(r.date);
+  }).join('\n');
+}
+
+document.getElementById('shortPdfBtn').addEventListener('click', function(){
+  var created = persistShortForm();
+  if(!created) return;
+  resetShortForm();
+  renderShortRecords();
+  viewOrDownloadPdf(created, shortVoucherHTML, 'AlHaram-Shortage');
+});
+document.getElementById('shortWaBtn').addEventListener('click', function(){
+  var created = persistShortForm();
+  if(!created) return;
+  resetShortForm();
+  renderShortRecords();
+  shareOrDownloadPdf(created, shortVoucherHTML, 'AlHaram-Shortage', shortWaSummary);
+});
+
+function renderShortRecords(){
+  var profile = activeProfile();
+  if(!profile) return;
+  var records = loadShortRecords(profile).slice().sort(function(a,b){
+    return (b.date+b.createdAt) > (a.date+a.createdAt) ? 1 : -1;
+  });
+  var tbody = document.getElementById('shortRecordsBody');
+  tbody.innerHTML = '';
+  document.getElementById('shortRecordsEmpty').style.display = records.length ? 'none' : 'block';
+  records.forEach(function(r){
+    var totalValue = r.items.reduce(function(s,it){ return s+shortItemTotal(it); },0);
+    var catsText = r.items.map(function(it){ return (it.itemName||it.itemNo)+' ('+it.qty+')'; }).join('، ');
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>'+esc(r.voucherNo)+(r.editedAt?' <span class="badge badge-out">معدَّل</span>':'')+'</td>' +
+      '<td>'+fmtDate(r.date)+'</td>' +
+      '<td>'+esc(r.supplierName)+'</td>' +
+      '<td>'+esc(r.invoiceNo||'—')+'</td>' +
+      '<td title="'+esc(catsText)+'">'+esc(catsText.length>28?catsText.slice(0,28)+'…':catsText)+'</td>' +
+      '<td>'+money(totalValue)+'</td>' +
+      '<td title="'+esc(r.notes)+'">'+esc((r.notes||'—').slice(0,18))+'</td>' +
+      '<td><div class="row-actions">' +
+        '<button class="mini-btn" data-act="pdf" data-id="'+r.id+'">طباعة</button>' +
+        '<button class="mini-btn" data-act="wa" data-id="'+r.id+'">واتساب</button>' +
+        '<button class="mini-btn" data-act="edit" data-id="'+r.id+'">تعديل</button>' +
+        '<button class="mini-btn danger" data-act="del" data-id="'+r.id+'">حذف</button>' +
+      '</div></td>';
+    tbody.appendChild(tr);
+  });
+}
+document.getElementById('shortRecordsBody').addEventListener('click', function(e){
+  var btn = e.target.closest('button[data-act]');
+  if(!btn) return;
+  var id = btn.dataset.id, act = btn.dataset.act;
+  var profile = activeProfile();
+  var records = loadShortRecords(profile);
+  var rec = records.find(function(r){ return r.id === id; });
+  if(!rec) return;
+  if(act === 'pdf'){ viewOrDownloadPdf([rec], shortVoucherHTML, 'AlHaram-Shortage'); }
+  else if(act === 'wa'){ shareOrDownloadPdf([rec], shortVoucherHTML, 'AlHaram-Shortage', shortWaSummary); }
+  else if(act === 'edit'){
+    shortEditingId = id;
+    document.getElementById('shortBranchDisplay').value = whName(rec.warehouse);
+    document.getElementById('shortSupplierName').value = rec.supplierName || '';
+    document.getElementById('shortInvoiceNo').value = rec.invoiceNo || '';
+    document.getElementById('shortDate').value = rec.date;
+    document.getElementById('shortNotes').value = rec.notes || '';
+    document.getElementById('shortItemsWrap').innerHTML = '';
+    rec.items.forEach(function(it){ addShortItemRow(it); });
+    document.getElementById('shortFormTitle').textContent = 'تعديل إشعار رقم '+rec.voucherNo;
+    document.getElementById('shortCancelEditBtn').style.display = 'inline-flex';
+    activateTab('shortage');
+    toast('يمكنك الآن تعديل بيانات الإشعار');
+  }
+  else if(act === 'del'){
+    requirePassword(function(){
+      var cur = loadShortRecords(profile).filter(function(r){ return r.id !== id; });
+      saveShortRecords(profile, cur);
+      renderShortRecords();
+      toast('تم حذف الإشعار');
+    }, 'أدخل كلمة السر لتأكيد حذف إشعار النقص '+rec.voucherNo+'.');
+  }
+});
+
 /* ================= INIT ================= */
 function renderAll(){
   renderHeader();
@@ -3087,6 +3400,8 @@ function renderAll(){
   renderDmgRecords();
   resetRetForm();
   renderRetRecords();
+  resetShortForm();
+  renderShortRecords();
   renderBackupTab();
 }
 
