@@ -89,19 +89,19 @@
   }
   .toggle-mode button.active{background:var(--gold);color:#20140A;}
 
-  /* status line: gear + current warehouse name, سطر واحد مضغوط */
-  .status-line{gap:10px;flex-wrap:nowrap;justify-content:flex-start;}
+  /* status line: current warehouse name + شارة تنبيه النسخة الاحتياطية */
+  .status-line{gap:8px;flex-wrap:wrap;row-gap:6px;justify-content:flex-start;}
   .backup-warn-badge{
     margin-inline-start:auto;display:flex;align-items:center;gap:5px;
     background:#5C2A22;color:#FFE9C7;border:1px solid #E0B26A;
-    padding:6px 12px;border-radius:999px;font-size:11.5px;font-weight:700;
+    padding:5px 11px;border-radius:999px;font-size:10.5px;font-weight:700;
     white-space:nowrap;cursor:pointer;
   }
   .backup-warn-badge:hover{background:#6E3329;}
   .status-text{
-    flex:1;min-width:0;
-    font-size:13px;font-weight:700;color:#E9E5D6;
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    flex:1 1 auto;min-width:0;
+    font-size:12px;font-weight:700;color:#E9E5D6;
+    white-space:normal;overflow-wrap:break-word;
   }
 
   /* ---------- Tabs ---------- */
@@ -477,7 +477,6 @@
     <div id="headerToggle"></div>
   </div>
   <div class="header-line status-line">
-    <button class="icon-btn" id="gearBtn" title="الإعدادات">⚙️</button>
     <div id="statusText" class="status-text"></div>
     <div id="backupWarnBadge" class="backup-warn-badge" style="display:none;" title="اضغط لأخذ نسخة احتياطية الآن">⚠️ <span id="backupWarnText">النسخة الاحتياطية متأخرة</span></div>
   </div>
@@ -847,8 +846,8 @@
         </div>
       </div>
 
-      <div class="item-row-labels" id="shortItemLabels" style="grid-template-columns:.8fr 1.1fr .5fr .55fr .65fr 1fr auto;">
-        <span>رقم الصنف</span><span>اسم الصنف</span><span>الكمية</span><span>الوحدة</span><span>السعر</span><span>ملاحظة</span><span></span>
+      <div class="item-row-labels" id="shortItemLabels" style="grid-template-columns:.8fr 1.1fr .5fr .55fr .7fr 1fr auto;">
+        <span>رقم الصنف</span><span>اسم الصنف</span><span>الكمية</span><span>الوحدة</span><span>سعر الشراء</span><span>ملاحظة</span><span></span>
       </div>
       <div id="shortItemsWrap"></div>
       <button class="add-row-btn" id="addShortItemBtn" type="button">+ إضافة صنف</button>
@@ -872,7 +871,7 @@
       <div class="table-wrap">
         <table class="records" id="shortRecordsTable">
           <thead><tr>
-            <th>رقم السند</th><th>التاريخ</th><th>المورد</th><th>رقم الفاتورة</th><th>الأصناف</th><th>الإجمالي (ر.س)</th><th>ملاحظات</th><th>إجراءات</th>
+            <th>رقم السند</th><th>التاريخ</th><th>المورد</th><th>رقم الفاتورة</th><th>الأصناف</th><th>الإجمالي شامل الضريبة</th><th>ملاحظات</th><th>إجراءات</th>
           </tr></thead>
           <tbody id="shortRecordsBody"></tbody>
         </table>
@@ -1294,7 +1293,6 @@ function renderHeader(){
     toggleWrap.appendChild(tg);
   }
 }
-document.getElementById('gearBtn').addEventListener('click', function(){ activateTab('backup'); });
 document.getElementById('backupWarnBadge').addEventListener('click', function(){ activateTab('backup'); });
 
 /* ================= BACKUP REMINDER (تذكير النسخة الاحتياطية) ================= */
@@ -3507,7 +3505,7 @@ function addShortItemRow(prefill){
   var wrap = document.getElementById('shortItemsWrap');
   var row = document.createElement('div');
   row.className = 'item-row';
-  row.style.gridTemplateColumns = '.8fr 1.1fr .5fr .55fr .65fr 1fr auto';
+  row.style.gridTemplateColumns = '.8fr 1.1fr .5fr .55fr .7fr 1fr auto';
   row.innerHTML =
     '<div class="item-field"><label class="mobile-label">رقم الصنف</label>' +
       '<input type="text" class="short-itemno" placeholder="رقم الصنف" value="'+esc(prefill?prefill.itemNo:'')+'"></div>' +
@@ -3520,8 +3518,8 @@ function addShortItemRow(prefill){
         '<option value="piece"'+(!prefill||prefill.unit==='piece'?' selected':'')+'>حبة</option>' +
         '<option value="dozen"'+(prefill&&prefill.unit==='dozen'?' selected':'')+'>درزن</option>' +
       '</select></div>' +
-    '<div class="item-field"><label class="mobile-label">السعر</label>' +
-      '<input type="number" class="short-price" min="0" step="0.01" placeholder="السعر" value="'+(prefill&&prefill.price!=null?prefill.price:'')+'"></div>' +
+    '<div class="item-field"><label class="mobile-label">سعر الشراء</label>' +
+      '<input type="number" class="short-price" min="0" step="0.01" placeholder="سعر الشراء" value="'+(prefill&&prefill.price!=null?prefill.price:'')+'"></div>' +
     '<div class="item-field"><label class="mobile-label">ملاحظة</label>' +
       '<input type="text" class="short-note" placeholder="ملاحظة (اختياري)" value="'+esc(prefill?prefill.note:'')+'"></div>' +
     '<button type="button" class="del-row" title="حذف الصنف">✕<span class="del-row-text"> حذف الصنف</span></button>';
@@ -3609,16 +3607,26 @@ document.getElementById('shortSaveBtn').addEventListener('click', function(){
 });
 document.getElementById('shortCancelEditBtn').addEventListener('click', function(){ resetShortForm(); });
 
-function shortItemTotal(it){ return Number(it.price||0) * Number(it.qty||0); }
+function shortItemCalc(it){
+  var beforeTax = Number(it.price||0) * Number(it.qty||0);
+  var vat = beforeTax * VAT_RATE;
+  var withVat = beforeTax + vat;
+  return {beforeTax:beforeTax, vat:vat, withVat:withVat};
+}
 
 function shortVoucherHTML(rec){
   var rows = rec.items.map(function(it, i){
+    var c = shortItemCalc(it);
     return '<tr><td>'+(i+1)+'</td><td>'+esc(it.itemNo)+'</td><td>'+esc(it.itemName||'—')+'</td><td>'+esc(it.qty)+' '+unitLabel(it.unit)+'</td>' +
-      '<td>'+money(it.price)+' / ريال</td><td>'+money(shortItemTotal(it))+'</td>' +
-      '<td>'+esc(it.note||'—')+'</td></tr>';
+      '<td>'+money(it.price)+' / ريال</td>' +
+      '<td>'+money(c.beforeTax)+'</td><td>'+money(c.vat)+'</td><td>'+money(c.withVat)+'</td></tr>';
   }).join('');
   var totalQty = rec.items.reduce(function(s,it){ return s+Number(it.qty||0); },0);
-  var totalValue = rec.items.reduce(function(s,it){ return s+shortItemTotal(it); },0);
+  var totals = rec.items.reduce(function(s,it){
+    var c = shortItemCalc(it);
+    s.beforeTax += c.beforeTax; s.vat += c.vat; s.withVat += c.withVat;
+    return s;
+  }, {beforeTax:0, vat:0, withVat:0});
   var editedNote = rec.editedAt ? ('<span>(تم التعديل بتاريخ '+esc(rec.editedAt.slice(0,10))+')</span>') : '';
   return (
     '<div class="voucher-page">' +
@@ -3637,8 +3645,8 @@ function shortVoucherHTML(rec){
         '<div><b>رقم الفاتورة</b>'+esc(rec.invoiceNo||'—')+'</div>' +
         '<div><b>حالة الإشعار</b>'+(rec.editedAt?'معدَّل '+editedNote:'أصلي')+'</div>' +
       '</div>' +
-      '<table class="v-table"><thead><tr><th>م</th><th>رقم الصنف</th><th>اسم الصنف</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th><th>ملاحظة</th></tr></thead>' +
-      '<tbody>'+rows+'<tr><td colspan="3">الإجمالي</td><td>'+totalQty+'</td><td></td><td>'+money(totalValue)+'</td><td></td></tr></tbody></table>' +
+      '<table class="v-table"><thead><tr><th>م</th><th>رقم الصنف</th><th>اسم الصنف</th><th>الكمية</th><th>سعر الشراء</th><th>الإجمالي قبل الضريبة</th><th>الضريبة المضافة</th><th>الإجمالي شامل الضريبة</th></tr></thead>' +
+      '<tbody>'+rows+'<tr><td colspan="3">الإجمالي</td><td>'+totalQty+'</td><td></td><td>'+money(totals.beforeTax)+'</td><td>'+money(totals.vat)+'</td><td>'+money(totals.withVat)+'</td></tr></tbody></table>' +
       (rec.notes ? '<div class="v-notes"><b>ملاحظات عامة:</b> '+esc(rec.notes)+'</div>' : '') +
       '<div class="v-sign">' +
         '<div>توقيع مستلم البضاعة<div class="line">الاسم / التوقيع</div></div>' +
@@ -3680,7 +3688,7 @@ function renderShortRecords(){
   tbody.innerHTML = '';
   document.getElementById('shortRecordsEmpty').style.display = records.length ? 'none' : 'block';
   records.forEach(function(r){
-    var totalValue = r.items.reduce(function(s,it){ return s+shortItemTotal(it); },0);
+    var totalValue = r.items.reduce(function(s,it){ return s+shortItemCalc(it).withVat; },0);
     var catsText = r.items.map(function(it){ return (it.itemName||it.itemNo)+' ('+it.qty+')'; }).join('، ');
     var tr = document.createElement('tr');
     tr.innerHTML =
