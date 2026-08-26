@@ -309,6 +309,7 @@
     border:1px solid var(--line);background:#fff;border-radius:7px;padding:5px 9px;font-size:11.5px;font-weight:700;color:var(--pine);
   }
   .mini-btn.danger{color:var(--danger);}
+  .mini-btn[data-act="approve"]{color:var(--ok);border-color:var(--ok);}
   .empty-state{text-align:center;padding:40px 20px;color:var(--ink-soft);}
   .empty-state .pyr-mark{margin:0 auto 12px;transform:scale(1.6);}
 
@@ -781,6 +782,20 @@
           <input type="date" id="retDate">
         </div>
       </div>
+      <div class="row2">
+        <div class="field">
+          <label>سبب الإرجاع</label>
+          <select id="retReason">
+            <option value="">غير محدد</option>
+            <option value="damaged">بضاعة تالفة</option>
+            <option value="excess">زيادة عن الحاجة</option>
+            <option value="expired">منتهية الصلاحية</option>
+            <option value="wrong_item">صنف غير مطابق للطلب</option>
+            <option value="other">أخرى</option>
+          </select>
+        </div>
+        <div class="field"></div>
+      </div>
 
       <div class="item-row-labels" id="retItemLabels" style="grid-template-columns:1.4fr .6fr .8fr auto;">
         <span>الصنف</span><span>الكمية</span><span>سعر الشراء</span><span></span>
@@ -802,19 +817,36 @@
     </div>
 
     <div class="card">
-      <h2>سجل سندات المرتجع لتاجر</h2>
-      <p class="hint">السجلات الخاصة بمستودعك الحالي فقط، محفوظة على هذا الجهاز.</p>
+      <h2>⏳ السندات غير المعتمدة</h2>
+      <p class="hint">السندات التي أُرسلت للتاجر ولم تصل موافقته على استلامها بعد. اضغط "✅ اعتماد" فور تأكيد التاجر للاستلام.</p>
       <div class="table-wrap">
-        <table class="records" id="retRecordsTable">
+        <table class="records" id="retRecordsTablePending">
           <thead><tr>
             <th>رقم السند</th><th>التاريخ</th><th>المورد</th><th>الأصناف</th><th>الإجمالي شامل الضريبة (ر.س)</th><th>ملاحظات</th><th>إجراءات</th>
           </tr></thead>
-          <tbody id="retRecordsBody"></tbody>
+          <tbody id="retRecordsBodyPending"></tbody>
         </table>
       </div>
-      <div id="retRecordsEmpty" class="empty-state" style="display:none;">
+      <div id="retRecordsEmptyPending" class="empty-state" style="display:none;">
         <div class="pyr-mark"><div class="tier t1"></div><div class="tier t2"></div><div class="tier t3"></div></div>
-        <p>لا توجد سندات مرتجع مسجلة بعد.</p>
+        <p>لا توجد سندات غير معتمدة حاليًا.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>✅ السندات المعتمدة</h2>
+      <p class="hint">السندات التي أكّد التاجر استلامها والموافقة عليها.</p>
+      <div class="table-wrap">
+        <table class="records" id="retRecordsTableApproved">
+          <thead><tr>
+            <th>رقم السند</th><th>التاريخ</th><th>المورد</th><th>الأصناف</th><th>الإجمالي شامل الضريبة (ر.س)</th><th>ملاحظات</th><th>إجراءات</th>
+          </tr></thead>
+          <tbody id="retRecordsBodyApproved"></tbody>
+        </table>
+      </div>
+      <div id="retRecordsEmptyApproved" class="empty-state" style="display:none;">
+        <div class="pyr-mark"><div class="tier t1"></div><div class="tier t2"></div><div class="tier t3"></div></div>
+        <p>لا توجد سندات معتمدة بعد.</p>
       </div>
     </div>
   </section>
@@ -866,19 +898,36 @@
     </div>
 
     <div class="card">
-      <h2>سجل إشعارات نقص البضاعة</h2>
-      <p class="hint">السجلات الخاصة بمستودعك الحالي فقط، محفوظة على هذا الجهاز.</p>
+      <h2>⏳ الإشعارات غير المعتمدة</h2>
+      <p class="hint">الإشعارات التي أُرسلت للمورد ولم يصل تسديد النقص أو اعتماده بعد. اضغط "✅ اعتماد" فور تسديد المورد.</p>
       <div class="table-wrap">
-        <table class="records" id="shortRecordsTable">
+        <table class="records" id="shortRecordsTablePending">
           <thead><tr>
             <th>رقم السند</th><th>التاريخ</th><th>المورد</th><th>رقم الفاتورة</th><th>الأصناف</th><th>الإجمالي شامل الضريبة</th><th>ملاحظات</th><th>إجراءات</th>
           </tr></thead>
-          <tbody id="shortRecordsBody"></tbody>
+          <tbody id="shortRecordsBodyPending"></tbody>
         </table>
       </div>
-      <div id="shortRecordsEmpty" class="empty-state" style="display:none;">
+      <div id="shortRecordsEmptyPending" class="empty-state" style="display:none;">
         <div class="pyr-mark"><div class="tier t1"></div><div class="tier t2"></div><div class="tier t3"></div></div>
-        <p>لا توجد إشعارات نقص بضاعة مسجلة بعد.</p>
+        <p>لا توجد إشعارات غير معتمدة حاليًا.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>✅ الإشعارات المعتمدة</h2>
+      <p class="hint">الإشعارات التي أكّد المورد تسديد النقص أو الموافقة عليها.</p>
+      <div class="table-wrap">
+        <table class="records" id="shortRecordsTableApproved">
+          <thead><tr>
+            <th>رقم السند</th><th>التاريخ</th><th>المورد</th><th>رقم الفاتورة</th><th>الأصناف</th><th>الإجمالي شامل الضريبة</th><th>ملاحظات</th><th>إجراءات</th>
+          </tr></thead>
+          <tbody id="shortRecordsBodyApproved"></tbody>
+        </table>
+      </div>
+      <div id="shortRecordsEmptyApproved" class="empty-state" style="display:none;">
+        <div class="pyr-mark"><div class="tier t1"></div><div class="tier t2"></div><div class="tier t3"></div></div>
+        <p>لا توجد إشعارات معتمدة بعد.</p>
       </div>
     </div>
   </section>
@@ -3282,6 +3331,7 @@ function resetRetForm(){
   document.getElementById('retSupplierName').value = '';
   document.getElementById('retSupplierInvoice').value = '';
   document.getElementById('retDate').value = todayStr();
+  document.getElementById('retReason').value = '';
   document.getElementById('retNotes').value = '';
   document.getElementById('retItemsWrap').innerHTML = '';
   addRetItemRow();
@@ -3302,11 +3352,17 @@ function collectRetItems(){
   return items;
 }
 
+function retReasonLabel(v){
+  var map = {damaged:'بضاعة تالفة', excess:'زيادة عن الحاجة', expired:'منتهية الصلاحية', wrong_item:'صنف غير مطابق للطلب', other:'أخرى'};
+  return map[v] || 'غير محدد';
+}
+
 function persistRetForm(){
   var profile = activeProfile();
   var date = document.getElementById('retDate').value || todayStr();
   var supplierName = document.getElementById('retSupplierName').value.trim();
   var supplierInvoice = document.getElementById('retSupplierInvoice').value.trim();
+  var reason = document.getElementById('retReason').value;
   var notes = document.getElementById('retNotes').value.trim();
   var items = collectRetItems();
   if(!items.length){ toast('الرجاء إضافة صنف واحد على الأقل بكمية وأسعار صحيحة'); return null; }
@@ -3320,6 +3376,7 @@ function persistRetForm(){
       records[idx].date = date;
       records[idx].supplierName = supplierName;
       records[idx].supplierInvoice = supplierInvoice;
+      records[idx].reason = reason;
       records[idx].items = items;
       records[idx].notes = notes;
       records[idx].editedAt = new Date().toISOString();
@@ -3328,8 +3385,9 @@ function persistRetForm(){
   } else {
     rec = {
       id: uid(), voucherNo: nextReturnNo(profile), date: date, warehouse: profile,
-      supplierName: supplierName, supplierInvoice: supplierInvoice,
-      items: items, notes: notes, createdAt: new Date().toISOString(), editedAt: null
+      supplierName: supplierName, supplierInvoice: supplierInvoice, reason: reason,
+      items: items, notes: notes, createdAt: new Date().toISOString(), editedAt: null,
+      approved: false
     };
     records.push(rec);
   }
@@ -3383,6 +3441,8 @@ function retVoucherHTML(rec){
         '<div><b>التاريخ</b>'+fmtDate(rec.date)+'</div>' +
         '<div><b>اسم المورد</b>'+esc(rec.supplierName)+'</div>' +
         '<div><b>رقم فاتورة المورد</b>'+esc(rec.supplierInvoice||'—')+'</div>' +
+        '<div><b>سبب الإرجاع</b>'+esc(retReasonLabel(rec.reason))+'</div>' +
+        '<div><b>حالة الاعتماد</b>'+(rec.approved?'معتمد من التاجر':'غير معتمد بعد')+'</div>' +
         '<div><b>حالة السند</b>'+(rec.editedAt?'معدَّل '+editedNote:'أصلي')+'</div>' +
       '</div>' +
       '<table class="v-table"><thead><tr><th>م</th><th>الصنف</th><th>الكمية</th><th>سعر الشراء</th><th>الإجمالي قبل الضريبة</th><th>الضريبة المضافة</th><th>الإجمالي شامل الضريبة</th></tr></thead>' +
@@ -3418,40 +3478,62 @@ document.getElementById('retWaBtn').addEventListener('click', function(){
   shareOrDownloadPdf(created, retVoucherHTML, 'AlHaram-Return', retWaSummary);
 });
 
+function retRowHTML(r){
+  var totals = r.items.reduce(function(s,it){
+    var c = retItemCalc(it);
+    s.withVat += c.withVat;
+    return s;
+  }, {withVat:0});
+  var catsText = r.items.map(function(it){ return it.category+' ('+it.qty+')'; }).join('، ');
+  var toggleBtn = r.approved
+    ? '<button class="mini-btn" data-act="unapprove" data-id="'+r.id+'">↩️ إلغاء الاعتماد</button>'
+    : '<button class="mini-btn" data-act="approve" data-id="'+r.id+'">✅ اعتماد</button>';
+  return (
+    '<td>'+esc(r.voucherNo)+(r.editedAt?' <span class="badge badge-out">معدَّل</span>':'')+'</td>' +
+    '<td>'+fmtDate(r.date)+'</td>' +
+    '<td>'+esc(r.supplierName)+'</td>' +
+    '<td title="'+esc(catsText)+'">'+esc(catsText.length>28?catsText.slice(0,28)+'…':catsText)+'</td>' +
+    '<td>'+money(totals.withVat)+'</td>' +
+    '<td title="'+esc(r.notes)+'">'+esc((r.notes||'—').slice(0,18))+'</td>' +
+    '<td><div class="row-actions">' +
+      toggleBtn +
+      '<button class="mini-btn" data-act="pdf" data-id="'+r.id+'">طباعة</button>' +
+      '<button class="mini-btn" data-act="wa" data-id="'+r.id+'">واتساب</button>' +
+      '<button class="mini-btn" data-act="edit" data-id="'+r.id+'">تعديل</button>' +
+      '<button class="mini-btn danger" data-act="del" data-id="'+r.id+'">حذف</button>' +
+    '</div></td>'
+  );
+}
+
 function renderRetRecords(){
   var profile = activeProfile();
   if(!profile) return;
   var records = loadRetRecords(profile).slice().sort(function(a,b){
     return (b.date+b.createdAt) > (a.date+a.createdAt) ? 1 : -1;
   });
-  var tbody = document.getElementById('retRecordsBody');
-  tbody.innerHTML = '';
-  document.getElementById('retRecordsEmpty').style.display = records.length ? 'none' : 'block';
-  records.forEach(function(r){
-    var totals = r.items.reduce(function(s,it){
-      var c = retItemCalc(it);
-      s.withVat += c.withVat;
-      return s;
-    }, {withVat:0});
-    var catsText = r.items.map(function(it){ return it.category+' ('+it.qty+')'; }).join('، ');
+  var pending = records.filter(function(r){ return !r.approved; });
+  var approved = records.filter(function(r){ return r.approved; });
+
+  var pendingBody = document.getElementById('retRecordsBodyPending');
+  pendingBody.innerHTML = '';
+  document.getElementById('retRecordsEmptyPending').style.display = pending.length ? 'none' : 'block';
+  pending.forEach(function(r){
     var tr = document.createElement('tr');
-    tr.innerHTML =
-      '<td>'+esc(r.voucherNo)+(r.editedAt?' <span class="badge badge-out">معدَّل</span>':'')+'</td>' +
-      '<td>'+fmtDate(r.date)+'</td>' +
-      '<td>'+esc(r.supplierName)+'</td>' +
-      '<td title="'+esc(catsText)+'">'+esc(catsText.length>28?catsText.slice(0,28)+'…':catsText)+'</td>' +
-      '<td>'+money(totals.withVat)+'</td>' +
-      '<td title="'+esc(r.notes)+'">'+esc((r.notes||'—').slice(0,18))+'</td>' +
-      '<td><div class="row-actions">' +
-        '<button class="mini-btn" data-act="pdf" data-id="'+r.id+'">طباعة</button>' +
-        '<button class="mini-btn" data-act="wa" data-id="'+r.id+'">واتساب</button>' +
-        '<button class="mini-btn" data-act="edit" data-id="'+r.id+'">تعديل</button>' +
-        '<button class="mini-btn danger" data-act="del" data-id="'+r.id+'">حذف</button>' +
-      '</div></td>';
-    tbody.appendChild(tr);
+    tr.innerHTML = retRowHTML(r);
+    pendingBody.appendChild(tr);
+  });
+
+  var approvedBody = document.getElementById('retRecordsBodyApproved');
+  approvedBody.innerHTML = '';
+  document.getElementById('retRecordsEmptyApproved').style.display = approved.length ? 'none' : 'block';
+  approved.forEach(function(r){
+    var tr = document.createElement('tr');
+    tr.innerHTML = retRowHTML(r);
+    approvedBody.appendChild(tr);
   });
 }
-document.getElementById('retRecordsBody').addEventListener('click', function(e){
+
+function handleRetRecordsClick(e){
   var btn = e.target.closest('button[data-act]');
   if(!btn) return;
   var id = btn.dataset.id, act = btn.dataset.act;
@@ -3461,12 +3543,25 @@ document.getElementById('retRecordsBody').addEventListener('click', function(e){
   if(!rec) return;
   if(act === 'pdf'){ viewOrDownloadPdf([rec], retVoucherHTML, 'AlHaram-Return'); }
   else if(act === 'wa'){ shareOrDownloadPdf([rec], retVoucherHTML, 'AlHaram-Return', retWaSummary); }
+  else if(act === 'approve'){
+    rec.approved = true;
+    saveRetRecords(profile, records);
+    renderRetRecords();
+    toast('تم اعتماد السند رقم '+rec.voucherNo);
+  }
+  else if(act === 'unapprove'){
+    rec.approved = false;
+    saveRetRecords(profile, records);
+    renderRetRecords();
+    toast('تم إرجاع السند رقم '+rec.voucherNo+' إلى قائمة غير المعتمدة');
+  }
   else if(act === 'edit'){
     retEditingId = id;
     document.getElementById('retBranchDisplay').value = whName(rec.warehouse);
     document.getElementById('retSupplierName').value = rec.supplierName || '';
     document.getElementById('retSupplierInvoice').value = rec.supplierInvoice || '';
     document.getElementById('retDate').value = rec.date;
+    document.getElementById('retReason').value = rec.reason || '';
     document.getElementById('retNotes').value = rec.notes || '';
     document.getElementById('retItemsWrap').innerHTML = '';
     rec.items.forEach(function(it){ addRetItemRow(it); });
@@ -3483,7 +3578,9 @@ document.getElementById('retRecordsBody').addEventListener('click', function(e){
       toast('تم حذف السند');
     }, 'أدخل كلمة السر لتأكيد حذف السند '+rec.voucherNo+'.');
   }
-});
+}
+document.getElementById('retRecordsBodyPending').addEventListener('click', handleRetRecordsClick);
+document.getElementById('retRecordsBodyApproved').addEventListener('click', handleRetRecordsClick);
 
 /* ================= SHORTAGE TAB (نقص بضاعة) ================= */
 var shortItemSeq = 0;
@@ -3589,7 +3686,8 @@ function persistShortForm(){
     rec = {
       id: uid(), voucherNo: nextShortageNo(profile), date: date, warehouse: profile,
       supplierName: supplierName, invoiceNo: invoiceNo,
-      items: items, notes: notes, createdAt: new Date().toISOString(), editedAt: null
+      items: items, notes: notes, createdAt: new Date().toISOString(), editedAt: null,
+      approved: false
     };
     records.push(rec);
   }
@@ -3643,6 +3741,7 @@ function shortVoucherHTML(rec){
         '<div><b>التاريخ</b>'+fmtDate(rec.date)+'</div>' +
         '<div><b>اسم المورد</b>'+esc(rec.supplierName)+'</div>' +
         '<div><b>رقم الفاتورة</b>'+esc(rec.invoiceNo||'—')+'</div>' +
+        '<div><b>حالة الاعتماد</b>'+(rec.approved?'معتمد من المورد':'غير معتمد بعد')+'</div>' +
         '<div><b>حالة الإشعار</b>'+(rec.editedAt?'معدَّل '+editedNote:'أصلي')+'</div>' +
       '</div>' +
       '<table class="v-table"><thead><tr><th>م</th><th>رقم الصنف</th><th>اسم الصنف</th><th>الكمية</th><th>سعر الشراء</th><th>الإجمالي قبل الضريبة</th><th>الضريبة المضافة</th><th>الإجمالي شامل الضريبة</th></tr></thead>' +
@@ -3678,37 +3777,59 @@ document.getElementById('shortWaBtn').addEventListener('click', function(){
   shareOrDownloadPdf(created, shortVoucherHTML, 'AlHaram-Shortage', shortWaSummary);
 });
 
+function shortRowHTML(r){
+  var totalValue = r.items.reduce(function(s,it){ return s+shortItemCalc(it).withVat; },0);
+  var catsText = r.items.map(function(it){ return (it.itemName||it.itemNo)+' ('+it.qty+')'; }).join('، ');
+  var toggleBtn = r.approved
+    ? '<button class="mini-btn" data-act="unapprove" data-id="'+r.id+'">↩️ إلغاء الاعتماد</button>'
+    : '<button class="mini-btn" data-act="approve" data-id="'+r.id+'">✅ اعتماد</button>';
+  return (
+    '<td>'+esc(r.voucherNo)+(r.editedAt?' <span class="badge badge-out">معدَّل</span>':'')+'</td>' +
+    '<td>'+fmtDate(r.date)+'</td>' +
+    '<td>'+esc(r.supplierName)+'</td>' +
+    '<td>'+esc(r.invoiceNo||'—')+'</td>' +
+    '<td title="'+esc(catsText)+'">'+esc(catsText.length>28?catsText.slice(0,28)+'…':catsText)+'</td>' +
+    '<td>'+money(totalValue)+'</td>' +
+    '<td title="'+esc(r.notes)+'">'+esc((r.notes||'—').slice(0,18))+'</td>' +
+    '<td><div class="row-actions">' +
+      toggleBtn +
+      '<button class="mini-btn" data-act="pdf" data-id="'+r.id+'">طباعة</button>' +
+      '<button class="mini-btn" data-act="wa" data-id="'+r.id+'">واتساب</button>' +
+      '<button class="mini-btn" data-act="edit" data-id="'+r.id+'">تعديل</button>' +
+      '<button class="mini-btn danger" data-act="del" data-id="'+r.id+'">حذف</button>' +
+    '</div></td>'
+  );
+}
+
 function renderShortRecords(){
   var profile = activeProfile();
   if(!profile) return;
   var records = loadShortRecords(profile).slice().sort(function(a,b){
     return (b.date+b.createdAt) > (a.date+a.createdAt) ? 1 : -1;
   });
-  var tbody = document.getElementById('shortRecordsBody');
-  tbody.innerHTML = '';
-  document.getElementById('shortRecordsEmpty').style.display = records.length ? 'none' : 'block';
-  records.forEach(function(r){
-    var totalValue = r.items.reduce(function(s,it){ return s+shortItemCalc(it).withVat; },0);
-    var catsText = r.items.map(function(it){ return (it.itemName||it.itemNo)+' ('+it.qty+')'; }).join('، ');
+  var pending = records.filter(function(r){ return !r.approved; });
+  var approved = records.filter(function(r){ return r.approved; });
+
+  var pendingBody = document.getElementById('shortRecordsBodyPending');
+  pendingBody.innerHTML = '';
+  document.getElementById('shortRecordsEmptyPending').style.display = pending.length ? 'none' : 'block';
+  pending.forEach(function(r){
     var tr = document.createElement('tr');
-    tr.innerHTML =
-      '<td>'+esc(r.voucherNo)+(r.editedAt?' <span class="badge badge-out">معدَّل</span>':'')+'</td>' +
-      '<td>'+fmtDate(r.date)+'</td>' +
-      '<td>'+esc(r.supplierName)+'</td>' +
-      '<td>'+esc(r.invoiceNo||'—')+'</td>' +
-      '<td title="'+esc(catsText)+'">'+esc(catsText.length>28?catsText.slice(0,28)+'…':catsText)+'</td>' +
-      '<td>'+money(totalValue)+'</td>' +
-      '<td title="'+esc(r.notes)+'">'+esc((r.notes||'—').slice(0,18))+'</td>' +
-      '<td><div class="row-actions">' +
-        '<button class="mini-btn" data-act="pdf" data-id="'+r.id+'">طباعة</button>' +
-        '<button class="mini-btn" data-act="wa" data-id="'+r.id+'">واتساب</button>' +
-        '<button class="mini-btn" data-act="edit" data-id="'+r.id+'">تعديل</button>' +
-        '<button class="mini-btn danger" data-act="del" data-id="'+r.id+'">حذف</button>' +
-      '</div></td>';
-    tbody.appendChild(tr);
+    tr.innerHTML = shortRowHTML(r);
+    pendingBody.appendChild(tr);
+  });
+
+  var approvedBody = document.getElementById('shortRecordsBodyApproved');
+  approvedBody.innerHTML = '';
+  document.getElementById('shortRecordsEmptyApproved').style.display = approved.length ? 'none' : 'block';
+  approved.forEach(function(r){
+    var tr = document.createElement('tr');
+    tr.innerHTML = shortRowHTML(r);
+    approvedBody.appendChild(tr);
   });
 }
-document.getElementById('shortRecordsBody').addEventListener('click', function(e){
+
+function handleShortRecordsClick(e){
   var btn = e.target.closest('button[data-act]');
   if(!btn) return;
   var id = btn.dataset.id, act = btn.dataset.act;
@@ -3718,6 +3839,18 @@ document.getElementById('shortRecordsBody').addEventListener('click', function(e
   if(!rec) return;
   if(act === 'pdf'){ viewOrDownloadPdf([rec], shortVoucherHTML, 'AlHaram-Shortage'); }
   else if(act === 'wa'){ shareOrDownloadPdf([rec], shortVoucherHTML, 'AlHaram-Shortage', shortWaSummary); }
+  else if(act === 'approve'){
+    rec.approved = true;
+    saveShortRecords(profile, records);
+    renderShortRecords();
+    toast('تم اعتماد الإشعار رقم '+rec.voucherNo);
+  }
+  else if(act === 'unapprove'){
+    rec.approved = false;
+    saveShortRecords(profile, records);
+    renderShortRecords();
+    toast('تم إرجاع الإشعار رقم '+rec.voucherNo+' إلى قائمة غير المعتمدة');
+  }
   else if(act === 'edit'){
     shortEditingId = id;
     document.getElementById('shortBranchDisplay').value = whName(rec.warehouse);
@@ -3740,7 +3873,9 @@ document.getElementById('shortRecordsBody').addEventListener('click', function(e
       toast('تم حذف الإشعار');
     }, 'أدخل كلمة السر لتأكيد حذف إشعار النقص '+rec.voucherNo+'.');
   }
-});
+}
+document.getElementById('shortRecordsBodyPending').addEventListener('click', handleShortRecordsClick);
+document.getElementById('shortRecordsBodyApproved').addEventListener('click', handleShortRecordsClick);
 
 /* ================= INIT ================= */
 function renderAll(){
