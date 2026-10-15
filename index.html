@@ -273,11 +273,12 @@
      الكمية وسعر الشراء بنفس الحجم في الصف الذي يليه */
   @media(max-width:640px){
     #retItemsWrap .item-row{
-      grid-template-columns: 1fr 1fr !important;
+      grid-template-columns: 1fr 1fr 1fr !important;
     }
     #retItemsWrap .item-field:nth-child(1){grid-column:1/-1;grid-row:1;}
     #retItemsWrap .item-field:nth-child(2){grid-column:1/2;grid-row:2;}
     #retItemsWrap .item-field:nth-child(3){grid-column:2/3;grid-row:2;}
+    #retItemsWrap .item-field:nth-child(4){grid-column:3/4;grid-row:2;}
     #retItemsWrap .del-row{grid-row:3;}
   }
   /* تخطيط خاص لتبويب تغيير صنف على الجوال: الصنف السابق والصنف الحالي في صف،
@@ -845,8 +846,8 @@
         <div class="field"></div>
       </div>
 
-      <div class="item-row-labels" id="retItemLabels" style="grid-template-columns:1.4fr .6fr .8fr auto;">
-        <span>الصنف</span><span>الكمية</span><span>سعر الشراء</span><span></span>
+      <div class="item-row-labels" id="retItemLabels" style="grid-template-columns:1.4fr .6fr .6fr .8fr auto;">
+        <span>الصنف</span><span>الكمية</span><span>الوحدة</span><span>سعر الشراء</span><span></span>
       </div>
       <div id="retItemsWrap"></div>
       <button class="add-row-btn" id="addRetItemBtn" type="button">+ إضافة صنف</button>
@@ -1659,20 +1660,29 @@ function resetForm(){
   document.getElementById('cancelEditBtn').style.display = 'none';
 }
 
+var formBlocksError = null;
 function collectFormBlocks(){
   var blocks = [];
+  formBlocksError = null;
+  var idx = 0;
   document.querySelectorAll('.dest-block').forEach(function(block){
+    idx++;
     var to = block.querySelector('.dest-select').value;
     var items = [];
+    var hasAnyInput = false;
     block.querySelectorAll('.item-row').forEach(function(row){
       var cat = row.querySelector('.item-cat').value;
       var qty = parseInt(row.querySelector('.item-qty').value, 10);
       var price = parseFloat(row.querySelector('.item-price').value);
       var unit = 'piece';
       var note = row.querySelector('.item-note').value.trim();
+      if(cat || row.querySelector('.item-qty').value || row.querySelector('.item-price').value) hasAnyInput = true;
       if(cat && qty > 0 && price >= 0 && !isNaN(price)) items.push({category:cat, qty:qty, price:price, unit:unit, note:note});
     });
-    if(to && items.length) blocks.push({to:to, items:items});
+    if(to && items.length){ blocks.push({to:to, items:items}); }
+    else if(to || hasAnyInput){
+      if(!formBlocksError) formBlocksError = 'الوجهة رقم '+idx+' غير مكتملة: اختر المستودع وأدخل صنفًا بكمية وسعر صحيحين، أو احذف هذه الوجهة';
+    }
   });
   return blocks;
 }
@@ -1683,6 +1693,7 @@ function persistForm(){
   var date = document.getElementById('transferDate').value || todayStr();
   var notes = document.getElementById('generalNotes').value.trim();
   var blocks = collectFormBlocks();
+  if(formBlocksError){ toast(formBlocksError); return null; }
   if(!blocks.length){
     toast('الرجاء اختيار وجهة واحدة على الأقل وإضافة صنف بكمية وسعر صحيحين');
     return null;
@@ -2068,11 +2079,36 @@ document.getElementById('pdfBtn').addEventListener('click', function(){
   viewOrDownloadPdf(created, voucherHTML, 'AlHaram-Voucher');
 });
 
+function showMultiSendModal(records){
+  var old = document.getElementById('multiSendModal');
+  if(old) old.remove();
+  var m = document.createElement('div');
+  m.id = 'multiSendModal';
+  m.className = 'modal-overlay';
+  var html = '<div class="modal-box"><h2>إرسال السندات</h2><p>تم حفظ '+records.length+' سندات. اضغط على كل فرع لإرسال سنده الخاص عبر واتساب.</p>';
+  records.forEach(function(r){
+    html += '<button type="button" class="btn btn-gold" data-rid="'+r.id+'" style="width:100%;justify-content:center;margin-bottom:8px;">📤 '+esc(whName(r.to))+' — '+esc(r.voucherNo)+'</button>';
+  });
+  html += '<button type="button" class="btn btn-ghost" id="multiSendClose" style="width:100%;justify-content:center;">إغلاق</button></div>';
+  m.innerHTML = html;
+  document.body.appendChild(m);
+  m.addEventListener('click', function(e){
+    var b = e.target.closest('button[data-rid]');
+    if(b){
+      var rec = records.find(function(r){ return r.id === b.dataset.rid; });
+      if(rec){ b.style.opacity = '.55'; exportPDFAndShare([rec]); }
+      return;
+    }
+    if(e.target.id === 'multiSendClose' || e.target === m) m.remove();
+  });
+}
+
 document.getElementById('waBtn').addEventListener('click', function(){
   var created = persistForm();
   if(!created) return;
   resetFormKeepTab();
-  exportPDFAndShare(created);
+  if(created.length > 1) showMultiSendModal(created);
+  else exportPDFAndShare(created);
 });
 
 /* ================= RECORDS TAB ================= */
@@ -3494,12 +3530,17 @@ function addRetItemRow(prefill){
   var wrap = document.getElementById('retItemsWrap');
   var row = document.createElement('div');
   row.className = 'item-row';
-  row.style.gridTemplateColumns = '1.4fr .6fr .8fr auto';
+  row.style.gridTemplateColumns = '1.4fr .6fr .6fr .8fr auto';
   row.innerHTML =
     '<div class="item-field"><label class="mobile-label">الصنف</label>' +
       '<input type="text" class="ret-cat" placeholder="اسم الصنف" value="'+esc(prefill?prefill.category:'')+'"></div>' +
     '<div class="item-field"><label class="mobile-label">الكمية</label>' +
       '<input type="number" class="ret-qty" min="1" placeholder="الكمية" value="'+(prefill?prefill.qty:'')+'"></div>' +
+    '<div class="item-field"><label class="mobile-label">الوحدة</label>' +
+      '<select class="ret-unit">' +
+        '<option value="piece"'+(!prefill||prefill.unit!=='dozen'?' selected':'')+'>حبة</option>' +
+        '<option value="dozen"'+(prefill&&prefill.unit==='dozen'?' selected':'')+'>درزن</option>' +
+      '</select></div>' +
     '<div class="item-field"><label class="mobile-label">سعر الشراء</label>' +
       '<input type="number" class="ret-buy" min="0" step="0.01" placeholder="سعر الشراء" value="'+(prefill&&prefill.buyPrice!=null?prefill.buyPrice:'')+'"></div>' +
     '<button type="button" class="del-row" title="حذف الصنف">✕<span class="del-row-text"> حذف الصنف</span></button>';
@@ -3533,8 +3574,9 @@ function collectRetItems(){
     var cat = row.querySelector('.ret-cat').value.trim();
     var qty = parseInt(row.querySelector('.ret-qty').value, 10);
     var buyPrice = parseFloat(row.querySelector('.ret-buy').value);
+    var unit = row.querySelector('.ret-unit').value || 'piece';
     if(cat && qty > 0 && buyPrice >= 0 && !isNaN(buyPrice)){
-      items.push({category:cat, qty:qty, buyPrice:buyPrice});
+      items.push({category:cat, qty:qty, unit:unit, buyPrice:buyPrice});
     }
   });
   return items;
@@ -3605,7 +3647,7 @@ function retVoucherHTML(rec){
     var c = retItemCalc(it);
     return '<tr><td>'+(i+1)+'</td><td>'+esc(it.category)+'</td>' +
       '<td>'+money(it.buyPrice)+' / ريال</td>' +
-      '<td>'+esc(it.qty)+' حبة</td>' +
+      '<td>'+esc(it.qty)+' '+unitLabel(it.unit)+'</td>' +
       '<td>'+money(c.beforeTax)+'</td><td>'+money(c.vat)+'</td><td>'+money(c.withVat)+'</td></tr>';
   }).join('');
   var totalQty = rec.items.reduce(function(s,it){ return s+Number(it.qty||0); },0);
@@ -3673,7 +3715,7 @@ function retRowHTML(r){
     s.withVat += c.withVat;
     return s;
   }, {withVat:0});
-  var catsText = r.items.map(function(it){ return it.category+' ('+it.qty+')'; }).join('، ');
+  var catsText = r.items.map(function(it){ return it.category+' ('+it.qty+' '+unitLabel(it.unit)+')'; }).join('، ');
   var toggleBtn = r.approved
     ? '<button class="mini-btn" data-act="unapprove" data-id="'+r.id+'">↩️ إلغاء الاعتماد</button>'
     : '<button class="mini-btn" data-act="approve" data-id="'+r.id+'">✅ اعتماد</button>';
