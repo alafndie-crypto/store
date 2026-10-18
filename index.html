@@ -452,6 +452,15 @@
 
 .row-actions{display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:5px !important;min-width:150px;max-width:210px;}
 .row-actions .mini-btn{width:100%;text-align:center;padding:6px 4px;font-size:11px;white-space:nowrap;}
+
+/* ===== MAIN EDITION (واجهة المستودع الرئيسي فقط) ===== */
+body:not(.is-main) .main-only, body:not(.is-main) .main-opts{display:none !important;}
+.main-opts{display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap;margin:0 0 14px;padding:10px 12px;background:#F6F3E8;border:1px dashed var(--gold);border-radius:10px;}
+.main-opts .field{margin-bottom:0;min-width:190px;}
+.tax-check{display:flex;align-items:center;gap:8px;font-weight:700;font-size:12.5px;color:var(--ink);cursor:pointer;padding-bottom:9px;}
+.tax-check input{width:17px;height:17px;margin:0;}
+.tax-hint{font-size:10.5px;color:var(--ink-soft);font-weight:600;}
+.tax-hint b{color:var(--pine);}
 </style>
 </head>
 <body>
@@ -512,6 +521,21 @@
   </div>
 </div>
 
+
+<!-- ===================== MAIN WAREHOUSE PASSWORD MODAL ===================== -->
+<div id="mainPwModal" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h2>الدخول إلى المستودع الرئيسي</h2>
+    <p>هذه الواجهة محمية. أدخل كلمة السر للمتابعة.</p>
+    <div class="field"><label>كلمة السر</label><input type="password" id="mainPwInput" placeholder="أدخل كلمة السر" inputmode="numeric" autocomplete="off"></div>
+    <div id="mainPwError" style="color:#A23B2E;font-size:12.5px;margin-bottom:10px;display:none;">كلمة السر غير صحيحة</div>
+    <div class="actions-bar" style="margin-top:0;padding-top:0;border-top:none;">
+      <button class="btn btn-primary" id="mainPwOkBtn">دخول</button>
+      <button class="btn btn-ghost" id="mainPwCancelBtn">إلغاء</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===================== HEADER + TABS (STICKY) ===================== -->
 <div class="sticky-top">
 <header class="app-header">
@@ -539,6 +563,7 @@
   <button data-tab="damaged">التالف</button>
   <button data-tab="return">مرتجع لتاجر</button>
   <button data-tab="shortage">نقص بضاعة</button>
+  <button data-tab="pricediff" class="main-only">فارق سعر</button>
   <button data-tab="invoices">الفواتير</button>
   <button data-tab="backup">الإعدادات</button>
 </nav>
@@ -623,7 +648,11 @@
           <input type="date" id="discDate">
         </div>
 
-        <div class="item-row-labels" id="discItemLabels" style="grid-template-columns:1.1fr .5fr .65fr .65fr 1fr auto;">
+        <div class="main-opts" id="discMainOpts">
+        <div class="field"><label>العملة</label><select id="discCurrency"><option value="SAR" selected>ريال سعودي (ر.س)</option><option value="USD">دولار أمريكي ($)</option><option value="CNY">يوان صيني (¥)</option></select></div>
+        <label class="tax-check"><input type="checkbox" id="discShowTax" checked> إظهار سعر الضريبة في طباعة PDF</label>
+      </div>
+      <div class="item-row-labels" id="discItemLabels" style="grid-template-columns:1.1fr .5fr .65fr .65fr 1fr auto;">
           <span>الصنف</span><span>الكمية</span><span>السعر السابق</span><span>السعر الحالي (أقل)</span><span>ملاحظة</span><span></span>
         </div>
         <div id="discItemsWrap"></div>
@@ -671,7 +700,11 @@
           <input type="date" id="incrDate">
         </div>
 
-        <div class="item-row-labels" id="incrItemLabels" style="grid-template-columns:1.1fr .5fr .65fr .65fr 1fr auto;">
+        <div class="main-opts" id="incrMainOpts">
+        <div class="field"><label>العملة</label><select id="incrCurrency"><option value="SAR" selected>ريال سعودي (ر.س)</option><option value="USD">دولار أمريكي ($)</option><option value="CNY">يوان صيني (¥)</option></select></div>
+        <label class="tax-check"><input type="checkbox" id="incrShowTax" checked> إظهار سعر الضريبة في طباعة PDF</label>
+      </div>
+      <div class="item-row-labels" id="incrItemLabels" style="grid-template-columns:1.1fr .5fr .65fr .65fr 1fr auto;">
           <span>الصنف</span><span>الكمية</span><span>السعر السابق</span><span>السعر الحالي (أكبر)</span><span>ملاحظة</span><span></span>
         </div>
         <div id="incrItemsWrap"></div>
@@ -768,6 +801,10 @@
         <input type="date" id="dmgDate">
       </div>
 
+      <div class="main-opts" id="dmgMainOpts">
+        <div class="field"><label>العملة</label><select id="dmgCurrency"><option value="SAR" selected>ريال سعودي (ر.س)</option><option value="USD">دولار أمريكي ($)</option><option value="CNY">يوان صيني (¥)</option></select></div>
+        <label class="tax-check"><input type="checkbox" id="dmgShowTax" checked> إظهار سعر الضريبة في طباعة PDF</label>
+      </div>
       <div class="item-row-labels" id="dmgItemLabels" style="grid-template-columns:1.2fr .55fr .7fr 1fr auto;">
         <span>الصنف</span><span>الكمية</span><span>السعر</span><span>ملاحظة</span><span></span>
       </div>
@@ -927,6 +964,10 @@
         </div>
       </div>
 
+      <div class="main-opts" id="shortMainOpts">
+        <div class="field"><label>العملة</label><select id="shortCurrency"><option value="SAR" selected>ريال سعودي (ر.س)</option><option value="USD">دولار أمريكي ($)</option><option value="CNY">يوان صيني (¥)</option></select></div>
+        <label class="tax-check"><input type="checkbox" id="shortShowTax" checked> إظهار سعر الضريبة في طباعة PDF</label>
+      </div>
       <div class="item-row-labels" id="shortItemLabels" style="grid-template-columns:.8fr 1.1fr .5fr .55fr .7fr 1fr auto;">
         <span>رقم الصنف</span><span>اسم الصنف</span><span>الكمية</span><span>الوحدة</span><span>سعر الشراء</span><span>ملاحظة</span><span></span>
       </div>
@@ -982,6 +1023,58 @@
   </section>
 
   <!-- ===================== TAB: BACKUP ===================== -->
+    <!-- ===================== PRICE DIFFERENCE TAB ===================== -->
+  <section class="tab-panel" id="tab-pricediff">
+    <div class="card">
+      <h2 id="pdFormTitle">إشعار فارق سعر جديد</h2>
+      <p class="hint">إذا أرسل التاجر الصنف بسعر أعلى من السعر الذي تم التحقق منه، يحسب النظام الفارق تلقائيًا مع الضريبة 15%.</p>
+      <div class="row2">
+        <div class="field"><label>المستودع / الفرع <span style="color:var(--danger)">*</span></label><select id="pdWarehouse"></select></div>
+        <div class="field"><label>اسم التاجر <span style="color:var(--danger)">*</span></label><input type="text" id="pdTrader" placeholder="اسم التاجر / المورد"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>رقم الفاتورة <span style="color:var(--danger)">*</span></label><input type="text" id="pdInvoice" placeholder="رقم الفاتورة"></div>
+        <div class="field date-field" style="max-width:none;"><label>التاريخ <span style="color:var(--danger)">*</span></label><input type="date" id="pdDate"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>رقم الصنف <span style="color:var(--danger)">*</span></label><input type="text" id="pdItemNo" placeholder="رقم الصنف"></div>
+        <div class="field"><label>اسم الصنف</label><input type="text" id="pdItemName" placeholder="اسم الصنف"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>السعر المرسل من التاجر قبل الضريبة <span style="color:var(--danger)">*</span></label><input type="number" id="pdOriginal" min="0" step="0.01" placeholder="100"></div>
+        <div class="field"><label>السعر بعد التحقق قبل الضريبة <span style="color:var(--danger)">*</span></label><input type="number" id="pdVerified" min="0" step="0.01" placeholder="90"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>الكمية <span style="color:var(--danger)">*</span></label><input type="number" id="pdQty" min="1" step="1" placeholder="1"></div>
+        <div class="field"><label>فارق السعر للوحدة</label><input type="text" id="pdUnitDiff" disabled></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>فارق السعر قبل الضريبة</label><input type="text" id="pdBeforeTax" disabled></div>
+        <div class="field"><label>ضريبة 15%</label><input type="text" id="pdVat" disabled></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>فارق السعر بعد الضريبة</label><input type="text" id="pdAfterTax" disabled></div>
+        <div class="field"><label>ملاحظة</label><input type="text" id="pdNote" placeholder="اختياري"></div>
+      </div>
+      <div class="actions-bar">
+        <button class="btn btn-primary" id="pdSaveBtn">💾 حفظ الإشعار</button>
+        <button class="btn btn-ghost" id="pdPrintBtn">🖨️ طباعة</button>
+        <button class="btn btn-gold" id="pdWaBtn">📤 واتساب</button>
+        <button class="btn btn-ghost" id="pdCancelBtn" style="display:none;">إلغاء التعديل</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>⏳ الإشعارات غير المعتمدة</h2>
+      <div class="table-wrap"><table class="records"><thead><tr><th>السند</th><th>التاريخ</th><th>المستودع</th><th>التاجر</th><th>الفاتورة</th><th>الصنف</th><th>الفارق بعد الضريبة</th><th>إجراءات</th></tr></thead><tbody id="pdPendingBody"></tbody></table></div>
+      <div id="pdPendingEmpty" class="empty-state" style="display:none;"><p>لا توجد إشعارات غير معتمدة.</p></div>
+    </div>
+    <div class="card">
+      <h2>✅ الإشعارات المعتمدة</h2>
+      <div class="table-wrap"><table class="records"><thead><tr><th>السند</th><th>التاريخ</th><th>المستودع</th><th>التاجر</th><th>الفاتورة</th><th>الصنف</th><th>الفارق بعد الضريبة</th><th>إجراءات</th></tr></thead><tbody id="pdApprovedBody"></tbody></table></div>
+      <div id="pdApprovedEmpty" class="empty-state" style="display:none;"><p>لا توجد إشعارات معتمدة.</p></div>
+    </div>
+  </section>
+
     <section class="tab-panel" id="tab-invoices">
     <div class="card"><p class="hint">جاري فتح نظام الفواتير…</p></div>
   </section>
@@ -1175,6 +1268,97 @@ function saveSetup(){ localStorage.setItem('awt_setup', JSON.stringify(setup)); 
 
 function activeProfile(){ return setup ? setup.mode : null; }
 
+/* ================= MAIN EDITION: واجهة المستودع الرئيسي فقط ================= */
+var MAIN_UNLOCK_PASSWORD = '112233';
+var CURRENCIES = {
+  SAR:{name:'ريال سعودي', sym:'ر.س'},
+  USD:{name:'دولار أمريكي', sym:'$'},
+  CNY:{name:'يوان صيني', sym:'¥'}
+};
+function isMainMode(){ return activeProfile() === 'MAIN'; }
+function curCode(c){ return CURRENCIES[c] ? c : 'SAR'; }
+function curSym(c){ return CURRENCIES[curCode(c)].sym; }
+function curLabel(c){ return CURRENCIES[curCode(c)].name + ' (' + CURRENCIES[curCode(c)].sym + ')'; }
+function recMoney(v, rec){ return money(v) + ((rec && rec.currency) ? ' ' + curSym(rec.currency) : ''); }
+
+/* قراءة خيارات العملة وإظهار الضريبة من النموذج (تُحفظ فقط عند العمل بصفة الرئيسي) */
+function mainExtra(prefix){
+  if(!isMainMode()) return {};
+  var cs = document.getElementById(prefix+'Currency'), ck = document.getElementById(prefix+'ShowTax');
+  if(!cs || !ck) return {};
+  return {currency: curCode(cs.value), showTax: !!ck.checked};
+}
+/* تعبئة الخيارات: rec=null سند جديد (سعودي + الضريبة ظاهرة)، وإلا قيم السند المحفوظ */
+function loadMainExtra(prefix, rec){
+  var cs = document.getElementById(prefix+'Currency'), ck = document.getElementById(prefix+'ShowTax');
+  if(!cs || !ck) return;
+  cs.value = rec ? curCode(rec.currency) : 'SAR';
+  if(rec && typeof rec.showTax === 'boolean') ck.checked = rec.showTax;
+  else if(rec) ck.checked = (prefix === 'short');   // السندات القديمة: النقص كان يعرض الضريبة، والباقي لا
+  else ck.checked = true;
+}
+/* عرض "السعر بعد الضريبة" تحت حقل السعر أثناء الإدخال */
+function refreshTaxHints(root){
+  (root || document).querySelectorAll('.item-field').forEach(function(f){
+    var h = f.querySelector('.tax-hint .hint-val');
+    var inp = f.querySelector('input[type="number"]');
+    if(!h || !inp) return;
+    var v = parseFloat(inp.value);
+    h.textContent = isNaN(v) ? '—' : money(v * (1 + VAT_RATE));
+  });
+}
+document.addEventListener('input', function(e){
+  var f = (e.target && e.target.closest) ? e.target.closest('.item-field') : null;
+  if(f && f.parentNode) refreshTaxHints(f.parentNode);
+});
+var TAX_HINT_HTML = '<small class="tax-hint main-only">بعد الضريبة: <b class="hint-val">—</b></small>';
+
+/* إظهار/إخفاء عناصر الرئيسي فقط وتعديل عناوين الجداول */
+function applyMainUI(){
+  var on = isMainMode();
+  document.body.classList.toggle('is-main', on);
+  document.querySelectorAll('#tab-shortage th, #tab-damaged th').forEach(function(th){
+    if(!th.dataset.orig) th.dataset.orig = th.textContent;
+    var o = th.dataset.orig;
+    if(on){
+      if(o === 'الإجمالي شامل الضريبة') th.textContent = 'الإجمالي';
+      else if(o === 'القيمة (ر.س)') th.textContent = 'القيمة';
+    } else { th.textContent = o; }
+  });
+  if(!on){
+    var p = document.getElementById('tab-pricediff');
+    if(p && p.classList.contains('active')) activateTab('new');
+  }
+}
+
+/* ---- كلمة سر الدخول للمستودع الرئيسي ---- */
+var mainPwOnOk = null, mainPwOnCancel = null;
+function requireMainPassword(onOk, onCancel){
+  mainPwOnOk = onOk; mainPwOnCancel = onCancel || null;
+  document.getElementById('mainPwInput').value = '';
+  document.getElementById('mainPwError').style.display = 'none';
+  document.getElementById('mainPwModal').style.display = 'flex';
+  setTimeout(function(){ document.getElementById('mainPwInput').focus(); }, 60);
+}
+document.getElementById('mainPwOkBtn').addEventListener('click', function(){
+  if(document.getElementById('mainPwInput').value !== MAIN_UNLOCK_PASSWORD){
+    document.getElementById('mainPwError').style.display = 'block';
+    return;
+  }
+  document.getElementById('mainPwModal').style.display = 'none';
+  var cb = mainPwOnOk; mainPwOnOk = null; mainPwOnCancel = null;
+  if(cb) cb();
+});
+document.getElementById('mainPwCancelBtn').addEventListener('click', function(){
+  document.getElementById('mainPwModal').style.display = 'none';
+  var cb = mainPwOnCancel; mainPwOnOk = null; mainPwOnCancel = null;
+  if(cb) cb();
+});
+document.getElementById('mainPwInput').addEventListener('keydown', function(e){
+  if(e.key === 'Enter') document.getElementById('mainPwOkBtn').click();
+});
+
+
 /* ---- password protection ---- */
 function hasPassword(){ return !!localStorage.getItem('awt_password'); }
 function setStoredPassword(pw){ localStorage.setItem('awt_password', pw); }
@@ -1327,14 +1511,25 @@ function initSetup(){
     modal.style.display = 'flex';
   } else {
     modal.style.display = 'none';
-    if(!hasPassword()){
-      openPwCreateModal();
-    } else {
-      renderAll();
-    }
+    var proceedInit = function(){
+      if(!hasPassword()){ openPwCreateModal(); } else { renderAll(); }
+    };
+    if(setup.mode === 'MAIN'){
+      var tryMain = function(){
+        requireMainPassword(proceedInit, function(){
+          if(setup.branch !== 'MAIN'){ setup.mode = setup.branch; saveSetup(); proceedInit(); }
+          else { tryMain(); }
+        });
+      };
+      tryMain();
+    } else { proceedInit(); }
   }
 }
 function chooseBranch(key){
+  if(key === 'MAIN'){ requireMainPassword(function(){ chooseBranchApply(key); }); return; }
+  chooseBranchApply(key);
+}
+function chooseBranchApply(key){
   var dualMain = document.getElementById('setupDualMainCheckbox').checked;
   setup = { branch:key, mode:key, dualMain:dualMain };
   saveSetup();
@@ -1347,6 +1542,11 @@ function chooseBranch(key){
   }
 }
 function toggleMainMode(){
+  if(!setup || !setup.dualMain) return;
+  if(setup.mode !== 'MAIN'){ requireMainPassword(doToggleMainMode); return; }
+  doToggleMainMode();
+}
+function doToggleMainMode(){
   if(!setup || !setup.dualMain) return;
   setup.mode = (setup.mode === setup.branch) ? 'MAIN' : setup.branch;
   saveSetup();
@@ -1377,6 +1577,7 @@ function changeWarehouse(){
 
 /* ================= HEADER RENDER ================= */
 function renderHeader(){
+  applyMainUI();
   var toggleWrap = document.getElementById('headerToggle');
   var statusText = document.getElementById('statusText');
   toggleWrap.innerHTML = '';
@@ -1526,6 +1727,7 @@ function activateTab(name){
   if(name === 'damaged') renderDmgRecords();
   if(name === 'return') renderRetRecords();
   if(name === 'shortage') renderShortRecords();
+  if(name === 'pricediff'){ pdFillWarehouses(); pdRender(); }
   if(name === 'backup') renderBackupTab();
 }
 document.querySelectorAll('nav.tabs button').forEach(function(b){
@@ -2567,6 +2769,7 @@ document.getElementById('wipeBtn').addEventListener('click', function(){
     localStorage.removeItem(shortRecordsKey(profile));
     localStorage.removeItem(chgRecordsKey(profile));
     if(typeof incrRecordsKey === 'function') localStorage.removeItem(incrRecordsKey(profile));
+    if(profile === 'MAIN') localStorage.removeItem(PD_KEY);
     /* ملاحظة مهمة: لا نحذف عدادات ترقيم السندات عمدًا (counterKey ومثيلاتها).
      * يجب أن تستمر أرقام السندات بالتصاعد دائمًا ولا تعود للبداية أبدًا، حتى لو حُذفت
      * كل السجلات دفعة واحدة من هنا. أول سند جديد من كل نوع سيأخذ الرقم الذي
@@ -2619,13 +2822,14 @@ function addDiscItemRow(prefill){
     '<div class="item-field"><label class="mobile-label">الكمية</label>' +
       '<input type="number" class="disc-qty" min="1" placeholder="الكمية" value="'+(prefill?prefill.qty:'')+'"></div>' +
     '<div class="item-field"><label class="mobile-label">السعر السابق</label>' +
-      '<input type="number" class="disc-prev" min="0" step="0.01" placeholder="السعر السابق" value="'+(prefill&&prefill.prevPrice!=null?prefill.prevPrice:'')+'"></div>' +
+      '<input type="number" class="disc-prev" min="0" step="0.01" placeholder="السعر السابق" value="'+(prefill&&prefill.prevPrice!=null?prefill.prevPrice:'')+'">'+TAX_HINT_HTML+'</div>' +
     '<div class="item-field"><label class="mobile-label">السعر الحالي</label>' +
-      '<input type="number" class="disc-cur" min="0" step="0.01" placeholder="السعر الحالي" value="'+(prefill&&prefill.curPrice!=null?prefill.curPrice:'')+'"></div>' +
+      '<input type="number" class="disc-cur" min="0" step="0.01" placeholder="السعر الحالي" value="'+(prefill&&prefill.curPrice!=null?prefill.curPrice:'')+'">'+TAX_HINT_HTML+'</div>' +
     '<div class="item-field"><label class="mobile-label">ملاحظة</label>' +
       '<input type="text" class="disc-note" placeholder="ملاحظة (اختياري)" value="'+esc(prefill?prefill.note:'')+'"></div>' +
     '<button type="button" class="del-row" title="حذف الصنف">✕<span class="del-row-text"> حذف الصنف</span></button>';
   wrap.appendChild(row);
+  refreshTaxHints(row);
   row.querySelector('.del-row').addEventListener('click', function(){
     var items = wrap.querySelectorAll('.item-row');
     if(items.length <= 1){ toast('يجب أن يوجد صنف واحد على الأقل'); return; }
@@ -2641,6 +2845,7 @@ function resetDiscForm(){
   document.getElementById('discItemsWrap').innerHTML = '';
   addDiscItemRow();
   document.getElementById('discFormTitle').textContent = 'سند تخفيض أسعار جديد';
+  loadMainExtra('disc', null);
   document.getElementById('discCancelEditBtn').style.display = 'none';
 }
 
@@ -2684,6 +2889,7 @@ function persistDiscForm(){
       records[idx].items = items;
       records[idx].notes = notes;
       records[idx].editedAt = new Date().toISOString();
+      Object.assign(records[idx], mainExtra('disc'));
       rec = records[idx];
     }
   } else {
@@ -2691,6 +2897,7 @@ function persistDiscForm(){
       id: uid(), voucherNo: nextDiscountNo(profile), date: date, warehouse: profile,
       items: items, notes: notes, createdAt: new Date().toISOString(), editedAt: null
     };
+    Object.assign(rec, mainExtra('disc'));
     records.push(rec);
   }
   saveDiscRecords(profile, records);
@@ -2707,7 +2914,7 @@ document.getElementById('discSaveBtn').addEventListener('click', function(){
 });
 document.getElementById('discCancelEditBtn').addEventListener('click', function(){ resetDiscForm(); });
 
-function discVoucherHTML(rec){
+function discVoucherHTMLLegacy(rec){
   var profile = activeProfile();
   var rows = rec.items.map(function(it, i){
     var diffPerUnit = Number(it.prevPrice||0) - Number(it.curPrice||0);
@@ -2806,6 +3013,7 @@ document.getElementById('discRecordsBody').addEventListener('click', function(e)
     discEditingId = id;
     document.getElementById('discDate').value = rec.date;
     document.getElementById('discNotes').value = rec.notes || '';
+    loadMainExtra('disc', rec);
     document.getElementById('discItemsWrap').innerHTML = '';
     rec.items.forEach(function(it){ addDiscItemRow(it); });
     document.getElementById('discFormTitle').textContent = 'تعديل سند رقم '+rec.voucherNo;
@@ -2853,13 +3061,14 @@ function addIncrItemRow(prefill){
     '<div class="item-field"><label class="mobile-label">الكمية</label>' +
       '<input type="number" class="incr-qty" min="1" placeholder="الكمية" value="'+(prefill?prefill.qty:'')+'"></div>' +
     '<div class="item-field"><label class="mobile-label">السعر السابق</label>' +
-      '<input type="number" class="incr-prev" min="0" step="0.01" placeholder="السعر السابق" value="'+(prefill&&prefill.prevPrice!=null?prefill.prevPrice:'')+'"></div>' +
+      '<input type="number" class="incr-prev" min="0" step="0.01" placeholder="السعر السابق" value="'+(prefill&&prefill.prevPrice!=null?prefill.prevPrice:'')+'">'+TAX_HINT_HTML+'</div>' +
     '<div class="item-field"><label class="mobile-label">السعر الحالي</label>' +
-      '<input type="number" class="incr-cur" min="0" step="0.01" placeholder="السعر الحالي" value="'+(prefill&&prefill.curPrice!=null?prefill.curPrice:'')+'"></div>' +
+      '<input type="number" class="incr-cur" min="0" step="0.01" placeholder="السعر الحالي" value="'+(prefill&&prefill.curPrice!=null?prefill.curPrice:'')+'">'+TAX_HINT_HTML+'</div>' +
     '<div class="item-field"><label class="mobile-label">ملاحظة</label>' +
       '<input type="text" class="incr-note" placeholder="ملاحظة (اختياري)" value="'+esc(prefill?prefill.note:'')+'"></div>' +
     '<button type="button" class="del-row" title="حذف الصنف">✕<span class="del-row-text"> حذف الصنف</span></button>';
   wrap.appendChild(row);
+  refreshTaxHints(row);
   row.querySelector('.del-row').addEventListener('click', function(){
     var items = wrap.querySelectorAll('.item-row');
     if(items.length <= 1){ toast('يجب أن يوجد صنف واحد على الأقل'); return; }
@@ -2875,6 +3084,7 @@ function resetIncrForm(){
   document.getElementById('incrItemsWrap').innerHTML = '';
   addIncrItemRow();
   document.getElementById('incrFormTitle').textContent = 'سند زيادة أسعار جديد';
+  loadMainExtra('incr', null);
   document.getElementById('incrCancelEditBtn').style.display = 'none';
 }
 
@@ -2918,6 +3128,7 @@ function persistIncrForm(){
       records[idx].items = items;
       records[idx].notes = notes;
       records[idx].editedAt = new Date().toISOString();
+      Object.assign(records[idx], mainExtra('incr'));
       rec = records[idx];
     }
   } else {
@@ -2925,6 +3136,7 @@ function persistIncrForm(){
       id: uid(), voucherNo: nextIncreaseNo(profile), date: date, warehouse: profile,
       items: items, notes: notes, createdAt: new Date().toISOString(), editedAt: null
     };
+    Object.assign(rec, mainExtra('incr'));
     records.push(rec);
   }
   saveIncrRecords(profile, records);
@@ -2941,7 +3153,7 @@ document.getElementById('incrSaveBtn').addEventListener('click', function(){
 });
 document.getElementById('incrCancelEditBtn').addEventListener('click', function(){ resetIncrForm(); });
 
-function incrVoucherHTML(rec){
+function incrVoucherHTMLLegacy(rec){
   var profile = activeProfile();
   var rows = rec.items.map(function(it, i){
     var diffPerUnit = Number(it.curPrice||0) - Number(it.prevPrice||0);
@@ -3040,6 +3252,7 @@ document.getElementById('incrRecordsBody').addEventListener('click', function(e)
     incrEditingId = id;
     document.getElementById('incrDate').value = rec.date;
     document.getElementById('incrNotes').value = rec.notes || '';
+    loadMainExtra('incr', rec);
     document.getElementById('incrItemsWrap').innerHTML = '';
     rec.items.forEach(function(it){ addIncrItemRow(it); });
     document.getElementById('incrFormTitle').textContent = 'تعديل سند رقم '+rec.voucherNo;
@@ -3321,11 +3534,12 @@ function addDmgItemRow(prefill){
     '<div class="item-field"><label class="mobile-label">الكمية</label>' +
       '<input type="number" class="dmg-qty" min="1" placeholder="الكمية" value="'+(prefill?prefill.qty:'')+'"></div>' +
     '<div class="item-field"><label class="mobile-label">السعر</label>' +
-      '<input type="number" class="dmg-price" min="0" step="0.01" placeholder="السعر" value="'+(prefill&&prefill.price!=null?prefill.price:'')+'"></div>' +
+      '<input type="number" class="dmg-price" min="0" step="0.01" placeholder="السعر" value="'+(prefill&&prefill.price!=null?prefill.price:'')+'">'+TAX_HINT_HTML+'</div>' +
     '<div class="item-field"><label class="mobile-label">ملاحظة</label>' +
       '<input type="text" class="dmg-note" placeholder="ملاحظة (اختياري)" value="'+esc(prefill?prefill.note:'')+'"></div>' +
     '<button type="button" class="del-row" title="حذف الصنف">✕<span class="del-row-text"> حذف الصنف</span></button>';
   wrap.appendChild(row);
+  refreshTaxHints(row);
   row.querySelector('.del-row').addEventListener('click', function(){
     var items = wrap.querySelectorAll('.item-row');
     if(items.length <= 1){ toast('يجب أن يوجد صنف واحد على الأقل'); return; }
@@ -3341,6 +3555,7 @@ function resetDmgForm(){
   document.getElementById('dmgItemsWrap').innerHTML = '';
   addDmgItemRow();
   document.getElementById('dmgFormTitle').textContent = 'سند تالف جديد';
+  loadMainExtra('dmg', null);
   document.getElementById('dmgCancelEditBtn').style.display = 'none';
 }
 
@@ -3372,6 +3587,7 @@ function persistDmgForm(){
       records[idx].items = items;
       records[idx].notes = notes;
       records[idx].editedAt = new Date().toISOString();
+      Object.assign(records[idx], mainExtra('dmg'));
       rec = records[idx];
     }
   } else {
@@ -3379,6 +3595,7 @@ function persistDmgForm(){
       id: uid(), voucherNo: nextDamagedNo(profile), date: date, warehouse: profile,
       items: items, notes: notes, createdAt: new Date().toISOString(), editedAt: null
     };
+    Object.assign(rec, mainExtra('dmg'));
     records.push(rec);
   }
   saveDmgRecords(profile, records);
@@ -3395,7 +3612,7 @@ document.getElementById('dmgSaveBtn').addEventListener('click', function(){
 });
 document.getElementById('dmgCancelEditBtn').addEventListener('click', function(){ resetDmgForm(); });
 
-function dmgVoucherHTML(rec){
+function dmgVoucherHTMLLegacy(rec){
   var rows = rec.items.map(function(it, i){
     var lineTotal = Number(it.price||0) * Number(it.qty||0);
     return '<tr><td>'+(i+1)+'</td><td>'+esc(it.category)+'</td><td>'+money(it.price)+' / ريال</td>' +
@@ -3467,7 +3684,7 @@ function renderDmgRecords(){
       '<td>'+fmtDate(r.date)+'</td>' +
       '<td title="'+esc(catsText)+'">'+esc(catsText.length>28?catsText.slice(0,28)+'…':catsText)+'</td>' +
       '<td>'+totalQty+'</td>' +
-      '<td>'+money(totalValue)+'</td>' +
+      '<td>'+recMoney(totalValue*(r.showTax===true?(1+VAT_RATE):1), r)+'</td>' +
       '<td title="'+esc(r.notes)+'">'+esc((r.notes||'—').slice(0,18))+'</td>' +
       '<td><div class="row-actions">' +
         '<button class="mini-btn" data-act="pdf" data-id="'+r.id+'">طباعة</button>' +
@@ -3492,6 +3709,7 @@ document.getElementById('dmgRecordsBody').addEventListener('click', function(e){
     dmgEditingId = id;
     document.getElementById('dmgDate').value = rec.date;
     document.getElementById('dmgNotes').value = rec.notes || '';
+    loadMainExtra('dmg', rec);
     document.getElementById('dmgItemsWrap').innerHTML = '';
     rec.items.forEach(function(it){ addDmgItemRow(it); });
     document.getElementById('dmgFormTitle').textContent = 'تعديل سند رقم '+rec.voucherNo;
@@ -3847,11 +4065,12 @@ function addShortItemRow(prefill){
         '<option value="dozen"'+(prefill&&prefill.unit==='dozen'?' selected':'')+'>درزن</option>' +
       '</select></div>' +
     '<div class="item-field"><label class="mobile-label">سعر الشراء</label>' +
-      '<input type="number" class="short-price" min="0" step="0.01" placeholder="سعر الشراء" value="'+(prefill&&prefill.price!=null?prefill.price:'')+'"></div>' +
+      '<input type="number" class="short-price" min="0" step="0.01" placeholder="سعر الشراء" value="'+(prefill&&prefill.price!=null?prefill.price:'')+'">'+TAX_HINT_HTML+'</div>' +
     '<div class="item-field"><label class="mobile-label">ملاحظة</label>' +
       '<input type="text" class="short-note" placeholder="ملاحظة (اختياري)" value="'+esc(prefill?prefill.note:'')+'"></div>' +
     '<button type="button" class="del-row" title="حذف الصنف">✕<span class="del-row-text"> حذف الصنف</span></button>';
   wrap.appendChild(row);
+  refreshTaxHints(row);
   row.querySelector('.del-row').addEventListener('click', function(){
     var items = wrap.querySelectorAll('.item-row');
     if(items.length <= 1){ toast('يجب أن يوجد صنف واحد على الأقل'); return; }
@@ -3871,6 +4090,7 @@ function resetShortForm(){
   document.getElementById('shortItemsWrap').innerHTML = '';
   addShortItemRow();
   document.getElementById('shortFormTitle').textContent = 'إشعار نقص بضاعة جديد';
+  loadMainExtra('short', null);
   document.getElementById('shortCancelEditBtn').style.display = 'none';
 }
 
@@ -3911,6 +4131,7 @@ function persistShortForm(){
       records[idx].items = items;
       records[idx].notes = notes;
       records[idx].editedAt = new Date().toISOString();
+      Object.assign(records[idx], mainExtra('short'));
       rec = records[idx];
     }
   } else {
@@ -3920,6 +4141,7 @@ function persistShortForm(){
       items: items, notes: notes, createdAt: new Date().toISOString(), editedAt: null,
       approved: false
     };
+    Object.assign(rec, mainExtra('short'));
     records.push(rec);
   }
   saveShortRecords(profile, records);
@@ -3943,7 +4165,7 @@ function shortItemCalc(it){
   return {beforeTax:beforeTax, vat:vat, withVat:withVat};
 }
 
-function shortVoucherHTML(rec){
+function shortVoucherHTMLLegacy(rec){
   var rows = rec.items.map(function(it, i){
     var c = shortItemCalc(it);
     return '<tr><td>'+(i+1)+'</td><td>'+esc(it.itemNo)+'</td><td>'+esc(it.itemName||'—')+'</td>' +
@@ -4010,7 +4232,7 @@ document.getElementById('shortWaBtn').addEventListener('click', function(){
 });
 
 function shortRowHTML(r){
-  var totalValue = r.items.reduce(function(s,it){ return s+shortItemCalc(it).withVat; },0);
+  var totalValue = r.items.reduce(function(s,it){ var c = shortItemCalc(it); return s+(r.showTax===false ? c.beforeTax : c.withVat); },0);
   var catsText = r.items.map(function(it){ return (it.itemName||it.itemNo)+' ('+it.qty+')'; }).join('، ');
   var toggleBtn = r.approved
     ? '<button class="mini-btn" data-act="unapprove" data-id="'+r.id+'">↩️ إلغاء الاعتماد</button>'
@@ -4021,7 +4243,7 @@ function shortRowHTML(r){
     '<td>'+esc(r.supplierName)+'</td>' +
     '<td>'+esc(r.invoiceNo||'—')+'</td>' +
     '<td title="'+esc(catsText)+'">'+esc(catsText.length>28?catsText.slice(0,28)+'…':catsText)+'</td>' +
-    '<td>'+money(totalValue)+'</td>' +
+    '<td>'+recMoney(totalValue, r)+'</td>' +
     '<td title="'+esc(r.notes)+'">'+esc((r.notes||'—').slice(0,18))+'</td>' +
     '<td><div class="row-actions">' +
       toggleBtn +
@@ -4090,6 +4312,7 @@ function handleShortRecordsClick(e){
     document.getElementById('shortInvoiceNo').value = rec.invoiceNo || '';
     document.getElementById('shortDate').value = rec.date;
     document.getElementById('shortNotes').value = rec.notes || '';
+    loadMainExtra('short', rec);
     document.getElementById('shortItemsWrap').innerHTML = '';
     rec.items.forEach(function(it){ addShortItemRow(it); });
     document.getElementById('shortFormTitle').textContent = 'تعديل إشعار رقم '+rec.voucherNo;
@@ -4109,6 +4332,313 @@ function handleShortRecordsClick(e){
 document.getElementById('shortRecordsBodyPending').addEventListener('click', handleShortRecordsClick);
 document.getElementById('shortRecordsBodyApproved').addEventListener('click', handleShortRecordsClick);
 
+
+/* ================= MAIN EDITION: قوالب PDF الجديدة (ضريبة اختيارية + عملة) =================
+ * تُستخدم فقط للسندات المحفوظة بصفة الرئيسي بعد هذا التحديث (يوجد فيها الحقل showTax).
+ * السندات القديمة وسندات باقي المستودعات تُطبع بنفس قوالبها السابقة دون أي تغيير. */
+function mainVoucherShell(rec, subtitle, metaItems, tableHTML, signHTML){
+  var editedNote = rec.editedAt ? ('<span>(تم التعديل بتاريخ '+esc(rec.editedAt.slice(0,10))+')</span>') : '';
+  var meta = metaItems.map(function(m){ return '<div><b>'+m[0]+'</b>'+m[1]+'</div>'; }).join('');
+  return (
+    '<div class="voucher-page">' +
+      '<div class="v-head">' +
+        '<div class="v-brand">' +
+          '<div class="pyr-mark"><div class="tier t1"></div><div class="tier t2"></div><div class="tier t3"></div></div>' +
+          '<div><h2>أصالة الهرم</h2><p>'+subtitle+'</p></div>' +
+        '</div>' +
+        '<div style="text-align:left;font-size:9px;color:#5C6459;">رقم السند<br><b style="font-size:11px;color:#16302B;">'+esc(rec.voucherNo)+'</b></div>' +
+      '</div>' +
+      '<div class="v-title">'+subtitle+'</div>' +
+      '<div class="v-meta">'+meta+'</div>' +
+      tableHTML +
+      (rec.notes ? '<div class="v-notes"><b>ملاحظات عامة:</b> '+esc(rec.notes)+'</div>' : '') +
+      (signHTML || '') +
+      '<div class="v-foot"><span>الدعم الفني: المهندس صلاح غالب — 0556321436</span><span>صادر من: '+esc(whName(rec.warehouse))+'</span></div>' +
+    '</div>'
+  );
+}
+function mainEditedLabel(rec){
+  return rec.editedAt ? ('معدَّل <span>(تم التعديل بتاريخ '+esc(rec.editedAt.slice(0,10))+')</span>') : 'أصلي';
+}
+
+function dmgVoucherHTML(rec){
+  if(typeof rec.showTax !== 'boolean') return dmgVoucherHTMLLegacy(rec);
+  var sym = curSym(rec.currency), tax = rec.showTax, k = tax ? (1+VAT_RATE) : 1;
+  var rows = rec.items.map(function(it, i){
+    var price = Number(it.price||0), qty = Number(it.qty||0);
+    return '<tr><td>'+(i+1)+'</td><td>'+esc(it.category)+'</td>' +
+      '<td>'+esc(it.qty)+' حبة</td>' +
+      '<td>'+money(price)+' '+sym+'</td>' +
+      (tax ? '<td>'+money(price*k)+' '+sym+'</td>' : '') +
+      '<td>'+money(price*qty*k)+' '+sym+'</td><td>'+esc(it.note||'—')+'</td></tr>';
+  }).join('');
+  var totalQty = rec.items.reduce(function(s,it){ return s+Number(it.qty||0); },0);
+  var total = rec.items.reduce(function(s,it){ return s+(Number(it.price||0)*Number(it.qty||0)*k); },0);
+  var table = '<table class="v-table"><thead><tr><th>م</th><th>الصنف</th><th>الكمية</th><th>سعر البضاعة</th>' +
+    (tax ? '<th>السعر مع الضريبة</th>' : '') +
+    '<th>'+(tax?'الإجمالي شامل الضريبة':'الإجمالي')+'</th><th>ملاحظات</th></tr></thead>' +
+    '<tbody>'+rows+'<tr><td colspan="2">الإجمالي</td><td>'+totalQty+'</td><td></td>'+(tax?'<td></td>':'')+'<td>'+money(total)+' '+sym+'</td><td></td></tr></tbody></table>';
+  return mainVoucherShell(rec, 'سند تالف', [
+    ['المستودع', esc(whName(rec.warehouse))],
+    ['التاريخ', fmtDate(rec.date)],
+    ['حالة السند', mainEditedLabel(rec)],
+    ['العملة', esc(curLabel(rec.currency))]
+  ], table, '');
+}
+
+function shortVoucherHTML(rec){
+  if(typeof rec.showTax !== 'boolean') return shortVoucherHTMLLegacy(rec);
+  var sym = curSym(rec.currency), tax = rec.showTax, k = tax ? (1+VAT_RATE) : 1;
+  var rows = rec.items.map(function(it, i){
+    var price = Number(it.price||0), qty = Number(it.qty||0);
+    return '<tr><td>'+(i+1)+'</td><td>'+esc(it.itemNo)+'</td><td>'+esc(it.itemName||'—')+'</td>' +
+      '<td>'+esc(it.qty)+' '+unitLabel(it.unit)+'</td>' +
+      '<td>'+money(price)+' '+sym+'</td>' +
+      (tax ? '<td>'+money(price*k)+' '+sym+'</td>' : '') +
+      '<td>'+money(price*qty*k)+' '+sym+'</td></tr>';
+  }).join('');
+  var totalQty = rec.items.reduce(function(s,it){ return s+Number(it.qty||0); },0);
+  var total = rec.items.reduce(function(s,it){ return s+(Number(it.price||0)*Number(it.qty||0)*k); },0);
+  var table = '<table class="v-table"><thead><tr><th>م</th><th>رقم الصنف</th><th>اسم الصنف</th><th>الكمية</th><th>سعر البضاعة</th>' +
+    (tax ? '<th>السعر مع الضريبة</th>' : '') +
+    '<th>'+(tax?'الإجمالي شامل الضريبة':'الإجمالي')+'</th></tr></thead>' +
+    '<tbody>'+rows+'<tr><td colspan="3">الإجمالي</td><td>'+totalQty+'</td><td></td>'+(tax?'<td></td>':'')+'<td>'+money(total)+' '+sym+'</td></tr></tbody></table>';
+  var sign = '<div class="v-sign">' +
+    '<div>توقيع مستلم البضاعة<div class="line">الاسم / التوقيع</div></div>' +
+    '<div>توقيع مسؤول الفرع<div class="line">الاسم / التوقيع</div></div>' +
+  '</div>';
+  return mainVoucherShell(rec, 'إشعار نقص بضاعة', [
+    ['الفرع', esc(whName(rec.warehouse))],
+    ['التاريخ', fmtDate(rec.date)],
+    ['اسم المورد', esc(rec.supplierName)],
+    ['رقم الفاتورة', esc(rec.invoiceNo||'—')],
+    ['حالة الاعتماد', rec.approved ? 'معتمد من المورد' : 'غير معتمد بعد'],
+    ['حالة الإشعار', mainEditedLabel(rec)],
+    ['العملة', esc(curLabel(rec.currency))]
+  ], table, sign);
+}
+
+/* سند تخفيض / زيادة أسعار: الضريبة تُحسب على السعر السابق والحالي معًا */
+function priceChangeVoucherNew(rec, kind){
+  var isDisc = (kind === 'disc');
+  var sym = curSym(rec.currency), tax = rec.showTax, k = tax ? (1+VAT_RATE) : 1;
+  var sgn = isDisc ? 1 : -1;
+  var rows = rec.items.map(function(it, i){
+    var prev = Number(it.prevPrice||0), cur = Number(it.curPrice||0), qty = Number(it.qty||0);
+    var lineDiff = (prev - cur) * sgn * qty * k;
+    return '<tr><td>'+(i+1)+'</td><td>'+esc(it.category)+'</td>' +
+      '<td>'+esc(it.qty)+' حبة</td>' +
+      '<td>'+money(prev)+' '+sym+'</td>' +
+      (tax ? '<td>'+money(prev*k)+' '+sym+'</td>' : '') +
+      '<td>'+money(cur)+' '+sym+'</td>' +
+      (tax ? '<td>'+money(cur*k)+' '+sym+'</td>' : '') +
+      '<td>'+money(lineDiff)+' '+sym+'</td><td>'+esc(it.note||'—')+'</td></tr>';
+  }).join('');
+  var totalQty = rec.items.reduce(function(s,it){ return s+Number(it.qty||0); },0);
+  var totalDiff = rec.items.reduce(function(s,it){ return s+((Number(it.prevPrice||0)-Number(it.curPrice||0))*sgn*Number(it.qty||0)*k); },0);
+  var valueLabel = (isDisc ? 'قيمة التخفيض' : 'قيمة الزيادة') + (tax ? ' (شامل الضريبة)' : '');
+  var table = '<table class="v-table"><thead><tr><th>م</th><th>الصنف</th><th>الكمية</th><th>السعر السابق</th>' +
+    (tax ? '<th>السابق مع الضريبة</th>' : '') +
+    '<th>السعر الحالي</th>' +
+    (tax ? '<th>الحالي مع الضريبة</th>' : '') +
+    '<th>'+valueLabel+'</th><th>ملاحظات</th></tr></thead>' +
+    '<tbody>'+rows+'<tr><td colspan="2">الإجمالي</td><td>'+totalQty+'</td>'+(tax?'<td></td><td></td><td></td><td></td>':'<td></td><td></td>')+'<td>'+money(totalDiff)+' '+sym+'</td><td></td></tr></tbody></table>';
+  return mainVoucherShell(rec, isDisc ? 'سند تخفيض أسعار' : 'سند زيادة أسعار', [
+    ['المستودع', esc(whName(rec.warehouse))],
+    ['التاريخ', fmtDate(rec.date)],
+    ['حالة السند', mainEditedLabel(rec)],
+    ['العملة', esc(curLabel(rec.currency))]
+  ], table, '');
+}
+function discVoucherHTML(rec){
+  return (typeof rec.showTax === 'boolean') ? priceChangeVoucherNew(rec, 'disc') : discVoucherHTMLLegacy(rec);
+}
+function incrVoucherHTML(rec){
+  return (typeof rec.showTax === 'boolean') ? priceChangeVoucherNew(rec, 'incr') : incrVoucherHTMLLegacy(rec);
+}
+
+/* ================= MAIN EDITION: تبويب فارق سعر (للمستودع الرئيسي فقط) ================= */
+var PD_KEY = 'awt_pricediff_MAIN';
+var PD_COUNTER_KEY = 'awt_pd_counter_MAIN';
+var pdEditingId = null;
+
+function pdLoad(){ try{ return JSON.parse(localStorage.getItem(PD_KEY)||'[]') || []; }catch(e){ return []; } }
+function pdSave(a){ localStorage.setItem(PD_KEY, JSON.stringify(a||[])); }
+function pdNextNo(){
+  var n = parseInt(localStorage.getItem(PD_COUNTER_KEY) || String(getInvoiceStartNumber()-1), 10) + 1;
+  localStorage.setItem(PD_COUNTER_KEY, String(n));
+  return 'MAIN-FRS-' + String(n).padStart(5,'0');
+}
+function pdWhName(key){ return WAREHOUSES[key] ? WAREHOUSES[key].name : (key || ''); }
+function pdFillWarehouses(selected){
+  var sel = document.getElementById('pdWarehouse');
+  if(!sel) return;
+  var cur = selected || sel.value || 'MAIN';
+  sel.innerHTML = '<option value="">اختر المستودع / الفرع...</option>';
+  Object.keys(WAREHOUSES).forEach(function(k){
+    var o = document.createElement('option');
+    o.value = k; o.textContent = WAREHOUSES[k].name;
+    if(k === cur) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+function pdCalc(){
+  var o = parseFloat(document.getElementById('pdOriginal').value) || 0;
+  var v = parseFloat(document.getElementById('pdVerified').value) || 0;
+  var q = parseFloat(document.getElementById('pdQty').value) || 0;
+  var unit = o - v, before = unit * q, vat = before * VAT_RATE, after = before + vat;
+  document.getElementById('pdUnitDiff').value = money(unit);
+  document.getElementById('pdBeforeTax').value = money(before);
+  document.getElementById('pdVat').value = money(vat);
+  document.getElementById('pdAfterTax').value = money(after);
+  return {original:o, verified:v, qty:q, unitDiff:unit, beforeTax:before, vat:vat, afterTax:after};
+}
+function pdReset(){
+  pdEditingId = null;
+  ['pdTrader','pdInvoice','pdItemNo','pdItemName','pdOriginal','pdVerified','pdQty','pdNote'].forEach(function(id){
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('pdDate').value = todayStr();
+  pdFillWarehouses('MAIN');
+  ['pdUnitDiff','pdBeforeTax','pdVat','pdAfterTax'].forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('pdFormTitle').textContent = 'إشعار فارق سعر جديد';
+  document.getElementById('pdCancelBtn').style.display = 'none';
+}
+function pdCollect(){
+  var wh = document.getElementById('pdWarehouse').value;
+  var trader = document.getElementById('pdTrader').value.trim();
+  var inv = document.getElementById('pdInvoice').value.trim();
+  var itemNo = document.getElementById('pdItemNo').value.trim();
+  var date = document.getElementById('pdDate').value || todayStr();
+  var c = pdCalc();
+  if(!wh || !trader || !inv || !itemNo || c.qty <= 0 || c.original < 0 || c.verified < 0){
+    toast('أكمل الحقول المطلوبة في إشعار فارق السعر'); return null;
+  }
+  return {
+    warehouse: wh, trader: trader, invoiceNo: inv, date: date, itemNo: itemNo,
+    itemName: document.getElementById('pdItemName').value.trim(),
+    original: c.original, verified: c.verified, qty: c.qty, unitDiff: c.unitDiff,
+    beforeTax: c.beforeTax, vat: c.vat, afterTax: c.afterTax,
+    note: document.getElementById('pdNote').value.trim()
+  };
+}
+function pdPersist(){
+  var d = pdCollect(); if(!d) return null;
+  var a = pdLoad(), rec;
+  if(pdEditingId){
+    var i = a.findIndex(function(x){ return x.id === pdEditingId; });
+    if(i < 0) return null;
+    rec = a[i];
+    Object.keys(d).forEach(function(k){ rec[k] = d[k]; });
+    rec.editedAt = new Date().toISOString();
+  } else {
+    rec = d;
+    rec.id = uid(); rec.voucherNo = pdNextNo(); rec.approved = false;
+    rec.createdAt = new Date().toISOString(); rec.editedAt = null;
+    a.push(rec);
+  }
+  pdSave(a);
+  return rec;
+}
+function pdRowHTML(r){
+  var toggle = r.approved
+    ? '<button class="mini-btn" data-pdact="unapprove" data-id="'+r.id+'">↩️ إلغاء الاعتماد</button>'
+    : '<button class="mini-btn" data-pdact="approve" data-id="'+r.id+'">✅ اعتماد</button>';
+  return '<td>'+esc(r.voucherNo)+(r.editedAt?' <span class="badge badge-out">معدَّل</span>':'')+'</td><td>'+fmtDate(r.date)+'</td><td>'+esc(pdWhName(r.warehouse))+'</td><td>'+esc(r.trader)+'</td><td>'+esc(r.invoiceNo)+'</td><td>'+esc((r.itemNo||'')+(r.itemName?' - '+r.itemName:''))+'</td><td>'+money(r.afterTax)+'</td>' +
+    '<td><div class="row-actions">'+toggle+
+    '<button class="mini-btn" data-pdact="print" data-id="'+r.id+'">طباعة</button>' +
+    '<button class="mini-btn" data-pdact="wa" data-id="'+r.id+'">واتساب</button>' +
+    '<button class="mini-btn" data-pdact="edit" data-id="'+r.id+'">تعديل</button>' +
+    '<button class="mini-btn danger" data-pdact="del" data-id="'+r.id+'">حذف</button></div></td>';
+}
+function pdRender(){
+  var a = pdLoad().slice().sort(function(x,y){ return ((y.date||'')+(y.createdAt||'')).localeCompare((x.date||'')+(x.createdAt||'')); });
+  var p = a.filter(function(x){ return !x.approved; }), ap = a.filter(function(x){ return x.approved; });
+  var pb = document.getElementById('pdPendingBody'), ab = document.getElementById('pdApprovedBody');
+  pb.innerHTML = ''; ab.innerHTML = '';
+  document.getElementById('pdPendingEmpty').style.display = p.length ? 'none' : 'block';
+  document.getElementById('pdApprovedEmpty').style.display = ap.length ? 'none' : 'block';
+  p.forEach(function(r){ var tr = document.createElement('tr'); tr.innerHTML = pdRowHTML(r); pb.appendChild(tr); });
+  ap.forEach(function(r){ var tr = document.createElement('tr'); tr.innerHTML = pdRowHTML(r); ab.appendChild(tr); });
+}
+function pdVoucherHTML(r){
+  var table = '<table class="v-table"><thead><tr><th>رقم الصنف</th><th>اسم الصنف</th><th>الكمية</th><th>سعر التاجر</th><th>السعر بعد التحقق</th><th>الفارق قبل الضريبة</th><th>الضريبة 15%</th><th>الفارق بعد الضريبة</th></tr></thead>' +
+    '<tbody><tr><td>'+esc(r.itemNo)+'</td><td>'+esc(r.itemName||'—')+'</td><td>'+esc(r.qty)+'</td><td>'+money(r.original)+'</td><td>'+money(r.verified)+'</td><td>'+money(r.beforeTax)+'</td><td>'+money(r.vat)+'</td><td>'+money(r.afterTax)+'</td></tr></tbody></table>';
+  return (
+    '<div class="voucher-page">' +
+      '<div class="v-head"><div class="v-brand"><div class="pyr-mark"><div class="tier t1"></div><div class="tier t2"></div><div class="tier t3"></div></div><div><h2>أصالة الهرم</h2><p>إشعار فارق سعر</p></div></div>' +
+      '<div style="text-align:left;font-size:9px;color:#5C6459;">رقم السند<br><b style="font-size:11px;color:#16302B;">'+esc(r.voucherNo)+'</b></div></div>' +
+      '<div class="v-title">إشعار فارق سعر</div>' +
+      '<div class="v-meta"><div><b>المستودع</b>'+esc(pdWhName(r.warehouse))+'</div><div><b>التاريخ</b>'+fmtDate(r.date)+'</div><div><b>التاجر</b>'+esc(r.trader)+'</div><div><b>رقم الفاتورة</b>'+esc(r.invoiceNo)+'</div><div><b>حالة الاعتماد</b>'+(r.approved?'معتمد':'غير معتمد بعد')+'</div></div>' +
+      table +
+      (r.note ? '<div class="v-notes"><b>ملاحظة:</b> '+esc(r.note)+'</div>' : '') +
+      '<div class="v-foot"><span>الدعم الفني: المهندس صلاح غالب — 0556321436</span><span>صادر من: '+esc(whName('MAIN'))+'</span></div>' +
+    '</div>'
+  );
+}
+function pdWaSummary(rs){
+  return 'إشعار فارق سعر - '+rs[0].voucherNo+' | '+pdWhName(rs[0].warehouse)+' | '+rs[0].trader+' | الفارق بعد الضريبة: '+money(rs[0].afterTax);
+}
+function pdHandle(e){
+  var b = e.target.closest('button[data-pdact]'); if(!b) return;
+  var all = pdLoad();
+  var r = all.find(function(x){ return x.id === b.dataset.id; });
+  if(!r) return;
+  var act = b.dataset.pdact;
+  if(act === 'approve' || act === 'unapprove'){
+    r.approved = (act === 'approve');
+    pdSave(all); pdRender();
+    toast(r.approved ? 'تم اعتماد إشعار فارق السعر' : 'تم إلغاء اعتماد إشعار فارق السعر');
+  } else if(act === 'print'){
+    viewOrDownloadPdf([r], pdVoucherHTML, 'AlHaram-PriceDifference');
+  } else if(act === 'wa'){
+    shareOrDownloadPdf([r], pdVoucherHTML, 'AlHaram-PriceDifference', pdWaSummary);
+  } else if(act === 'del'){
+    requirePassword(function(){
+      pdSave(pdLoad().filter(function(x){ return x.id !== r.id; }));
+      pdRender(); toast('تم حذف الإشعار');
+    }, 'أدخل كلمة السر لتأكيد حذف إشعار فارق السعر '+r.voucherNo+'.');
+  } else if(act === 'edit'){
+    pdEditingId = r.id;
+    pdFillWarehouses(r.warehouse);
+    document.getElementById('pdTrader').value = r.trader || '';
+    document.getElementById('pdInvoice').value = r.invoiceNo || '';
+    document.getElementById('pdDate').value = r.date || todayStr();
+    document.getElementById('pdItemNo').value = r.itemNo || '';
+    document.getElementById('pdItemName').value = r.itemName || '';
+    document.getElementById('pdOriginal').value = r.original;
+    document.getElementById('pdVerified').value = r.verified;
+    document.getElementById('pdQty').value = r.qty;
+    document.getElementById('pdNote').value = r.note || '';
+    pdCalc();
+    document.getElementById('pdFormTitle').textContent = 'تعديل إشعار رقم '+r.voucherNo;
+    document.getElementById('pdCancelBtn').style.display = 'inline-flex';
+    activateTab('pricediff');
+    window.scrollTo({top:0, behavior:'smooth'});
+    toast('يمكنك الآن تعديل بيانات الإشعار');
+  }
+}
+document.getElementById('pdPendingBody').addEventListener('click', pdHandle);
+document.getElementById('pdApprovedBody').addEventListener('click', pdHandle);
+['pdOriginal','pdVerified','pdQty'].forEach(function(id){ document.getElementById(id).addEventListener('input', pdCalc); });
+document.getElementById('pdSaveBtn').addEventListener('click', function(){
+  var wasEditing = !!pdEditingId;
+  var r = pdPersist(); if(!r) return;
+  toast(wasEditing ? 'تم تحديث إشعار فارق السعر' : 'تم حفظ إشعار فارق السعر');
+  pdReset(); pdRender();
+});
+document.getElementById('pdCancelBtn').addEventListener('click', pdReset);
+document.getElementById('pdPrintBtn').addEventListener('click', function(){
+  var r = pdPersist(); if(!r) return;
+  pdReset(); pdRender();
+  viewOrDownloadPdf([r], pdVoucherHTML, 'AlHaram-PriceDifference');
+});
+document.getElementById('pdWaBtn').addEventListener('click', function(){
+  var r = pdPersist(); if(!r) return;
+  pdReset(); pdRender();
+  shareOrDownloadPdf([r], pdVoucherHTML, 'AlHaram-PriceDifference', pdWaSummary);
+});
+
 /* ================= INIT ================= */
 function renderAll(){
   renderHeader();
@@ -4127,6 +4657,8 @@ function renderAll(){
   renderRetRecords();
   resetShortForm();
   renderShortRecords();
+  pdReset();
+  pdRender();
   renderBackupTab();
 }
 
