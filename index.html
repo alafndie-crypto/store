@@ -2072,6 +2072,48 @@ function resetFormKeepTab(){
   renderStats();
 }
 
+/* ===== تقسيم PDF على صفحات عند حدود الصفوف (بدل القص في منتصف الصف) ===== */
+function pdfPlanSlices(totalH, pageH, cands, head){
+  var slices = [], start = 0, guard = 0;
+  while(start < totalH - 1 && guard++ < 200){
+    var hdr = !!(slices.length && head && start < head.tableBottom - 1);
+    var hdrH = hdr ? (head.bottom - head.top) : 0;
+    var avail = pageH - hdrH;
+    if(totalH - start <= avail){ slices.push({from:start, to:totalH, hdr:hdr}); break; }
+    var limit = start + avail, cut = -1;
+    for(var i = 0; i < cands.length; i++){
+      if(cands[i] > start + hdrH + 20 && cands[i] <= limit) cut = Math.max(cut, cands[i]);
+    }
+    if(cut < 0) cut = limit;   // لا يوجد حد صف مناسب: نقص عند حد الصفحة كما كان سابقًا
+    slices.push({from:start, to:cut, hdr:hdr});
+    start = cut;
+  }
+  return slices;
+}
+function pdfMeasureBreaks(pageEl){
+  var base = pageEl.getBoundingClientRect(), top0 = base.top, cands = [], head = null;
+  var tables = pageEl.querySelectorAll('table');
+  Array.prototype.forEach.call(pageEl.children, function(ch){
+    cands.push(ch.getBoundingClientRect().bottom - top0);
+  });
+  Array.prototype.forEach.call(tables, function(t){
+    var rows = Array.prototype.slice.call(t.querySelectorAll('tbody tr'));
+    rows.forEach(function(tr, idx){
+      // لا نفصل صف الإجمالي الأخير وحده عن الصف الذي قبله
+      if(idx === rows.length - 2 && rows.length > 2) return;
+      cands.push(tr.getBoundingClientRect().bottom - top0);
+    });
+  });
+  if(tables.length === 1){
+    var th = tables[0].querySelector('thead');
+    if(th){
+      var r = th.getBoundingClientRect();
+      head = {top:r.top - top0, bottom:r.bottom - top0, tableBottom:tables[0].getBoundingClientRect().bottom - top0};
+    }
+  }
+  return {cands:cands, head:head, w:base.width};
+}
+
 /* ================= WHATSAPP EXPORT (يرسل ملف PDF حقيقي) ================= */
 function generatePdfBlob(records, htmlFn){
   return new Promise(function(resolve, reject){
@@ -2106,7 +2148,7 @@ function generatePdfBlob(records, htmlFn){
     var A4_W = 210, A4_H = 297; // mm
     var isFirstPage = true;
 
-    function addCanvasPaginated(canvas){
+    function addCanvasPaginated(canvas, geo){
       // نسبة البكسل لكل مم بناءً على عرض الصورة الفعلي مقابل عرض صفحة A4 (210مم)
       var pxPerMm = canvas.width / A4_W;
       var pageHeightPx = Math.floor(A4_H * pxPerMm);
@@ -2121,28 +2163,27 @@ function generatePdfBlob(records, htmlFn){
         return;
       }
 
-      // السند أطول من صفحة واحدة: نقسّمه لعدة شرائح بارتفاع صفحة A4 لكل واحدة
-      var remaining = canvas.height;
-      var offsetY = 0;
-      while(remaining > 0){
-        var sliceHeightPx = Math.min(pageHeightPx, remaining);
+      // السند أطول من صفحة: نقسمه عند حدود الصفوف، ونكرر رأس الجدول في الصفحات التالية
+      var k = (geo && geo.w) ? canvas.width / geo.w : 1;
+      var cands = geo ? geo.cands.map(function(v){ return Math.round(v*k); }) : [];
+      var head = (geo && geo.head) ? {top:Math.round(geo.head.top*k), bottom:Math.round(geo.head.bottom*k), tableBottom:Math.round(geo.head.tableBottom*k)} : null;
+      var plan = pdfPlanSlices(canvas.height, pageHeightPx, cands, head);
+      plan.forEach(function(sl){
+        var hdrH = sl.hdr ? (head.bottom - head.top) : 0;
+        var contentH = sl.to - sl.from;
         var sliceCanvas = document.createElement('canvas');
         sliceCanvas.width = canvas.width;
-        sliceCanvas.height = sliceHeightPx;
+        sliceCanvas.height = hdrH + contentH;
         var ctx = sliceCanvas.getContext('2d');
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
-        ctx.drawImage(canvas, 0, offsetY, canvas.width, sliceHeightPx, 0, 0, canvas.width, sliceHeightPx);
-
+        if(sl.hdr) ctx.drawImage(canvas, 0, head.top, canvas.width, hdrH, 0, 0, canvas.width, hdrH);
+        ctx.drawImage(canvas, 0, sl.from, canvas.width, contentH, 0, hdrH, canvas.width, contentH);
         var sliceImg = sliceCanvas.toDataURL('image/jpeg', 0.95);
-        var sliceHmm = sliceHeightPx / pxPerMm;
         if(!isFirstPage) pdf.addPage();
-        pdf.addImage(sliceImg, 'JPEG', 0, 0, A4_W, sliceHmm);
+        pdf.addImage(sliceImg, 'JPEG', 0, 0, A4_W, sliceCanvas.height / pxPerMm);
         isFirstPage = false;
-
-        offsetY += sliceHeightPx;
-        remaining -= sliceHeightPx;
-      }
+      });
     }
 
     function renderPage(i){
@@ -2151,8 +2192,9 @@ function generatePdfBlob(records, htmlFn){
         resolve(pdf.output('blob'));
         return;
       }
+      var geo = pdfMeasureBreaks(pages[i]);
       html2canvas(pages[i], {scale:2, useCORS:true, windowWidth:740}).then(function(canvas){
-        addCanvasPaginated(canvas);
+        addCanvasPaginated(canvas, geo);
         renderPage(i+1);
       }).catch(function(err){ cleanup(); reject(err); });
     }
