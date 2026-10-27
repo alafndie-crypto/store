@@ -1130,7 +1130,7 @@ body:not(.is-main) .main-only, body:not(.is-main) .main-opts{display:none !impor
     </div>
     <div class="card">
       <h2>ترقيم السندات</h2>
-      <p class="hint">حدد الرقم الذي تبدأ منه سلسلة ترقيم كل نوع من السندات (تحويل، تخفيض، تالف، مرتجع). يُطبَّق هذا الرقم فقط على أول سند جديد يُنشأ من كل نوع لم يصدر له سند بعد؛ وبعد ذلك يستمر الترقيم بالتصاعد تلقائيًا ولا يعود للبداية أبدًا حتى لو حُذفت كل السندات السابقة.</p>
+      <p class="hint">حدد الرقم الذي تبدأ منه سلسلة ترقيم كل نوع من السندات (تحويل، تخفيض، تالف، مرتجع). عند الضغط على حفظ يبدأ الترقيم من هذا الرقم في جميع التبويبات (تحويل، تخفيض، زيادة، تغيير صنف، تالف، مرتجع، نقص، فارق سعر، والفواتير). أما "مسح البيانات" فلا يغيّر الترقيم، فتستمر الأرقام بالتصاعد من آخر رقم صدر.</p>
       <div class="add-cat-row">
         <div class="field"><label>رقم بداية الترقيم</label><input type="number" id="invoiceStartInput" min="1" step="1" placeholder="100"></div>
         <button class="btn btn-primary" id="saveInvoiceStartBtn" type="button">💾 حفظ</button>
@@ -1458,6 +1458,19 @@ function getInvoiceStartNumber(){
   var v = parseInt(localStorage.getItem('awt_invoice_start') || '100', 10);
   if(isNaN(v) || v < 1) v = 100;
   return v;
+}
+
+/* يطبّق رقم البداية على عدادات جميع التبويبات دفعة واحدة (تحويل، تخفيض، زيادة،
+ * تغيير صنف، تالف، مرتجع، نقص، فارق سعر، والفواتير). يُستدعى فقط عند الحفظ من
+ * الإعدادات، ولا يُستدعى عند "مسح البيانات" حتى تستمر الأرقام بالتصاعد. */
+function resetAllVoucherCounters(val){
+  var base = val - 1;
+  var keys = [];
+  for(var i = 0; i < localStorage.length; i++){
+    var k = localStorage.key(i);
+    if(k && /^awt_.*counter_/.test(k)) keys.push(k);
+  }
+  keys.forEach(function(k){ localStorage.setItem(k, String(base)); });
 }
 
 function loadRecords(p){
@@ -2794,6 +2807,7 @@ document.getElementById('changeWhBtn').addEventListener('click', changeWarehouse
       return;
     }
     localStorage.setItem('awt_invoice_start', String(val));
+    resetAllVoucherCounters(val);
     input.value = val;
     toast('تم الحفظ. سيبدأ منه أول سند جديد لم يصدر له سند بعد من كل نوع');
   });
