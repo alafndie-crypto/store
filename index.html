@@ -1032,7 +1032,8 @@ textarea{min-height:76px;}
 
       <div class="actions-bar">
         <button class="btn btn-primary" id="shortSaveBtn">💾 حفظ الإشعار</button>
-        <button class="btn btn-ghost" id="shortPdfBtn">🖨️ طباعة</button>
+        <button class="btn btn-ghost" id="shortPdfBtn">🖨️ طباعة عربي</button>
+        <button class="btn btn-ghost" id="shortEnPdfBtn">🖨️ Print English</button>
         <button class="btn btn-gold" id="shortWaBtn">📤 إرسال واتساب</button>
         <button class="btn btn-ghost" id="shortCancelEditBtn" style="display:none;">إلغاء التعديل</button>
       </div>
@@ -4152,6 +4153,7 @@ function retRowHTML(r){
     '<td><div class="row-actions">' +
       toggleBtn +
       '<button class="mini-btn" data-act="pdf" data-id="'+r.id+'">طباعة</button>' +
+      '<button class="mini-btn" data-act="pdf-en" data-id="'+r.id+'">Print EN</button>' +
       '<button class="mini-btn" data-act="wa" data-id="'+r.id+'">واتساب</button>' +
       '<button class="mini-btn" data-act="edit" data-id="'+r.id+'">تعديل</button>' +
       '<button class="mini-btn danger" data-act="del" data-id="'+r.id+'">حذف</button>' +
@@ -4416,6 +4418,70 @@ function shortVoucherHTMLLegacy(rec){
   );
 }
 
+/* English-only PDF template for shortage notices. The form and stored record remain unchanged. */
+function shortEnglishBranchName(key){
+  var names = {
+    MAIN:'Main Warehouse', QRY:'Al Qurayyat Warehouse', TBR:'Tabarjal Warehouse',
+    SKK:'Sakaka Warehouse', HAIL:'Hail Warehouse', ARAR:'Arar Warehouse',
+    NJRN:'Najran Warehouse', RFH:'Rafha Warehouse', SHRR:'Sharurah Warehouse',
+    TRF:'Turaif Warehouse', JDH:'Jeddah Warehouse'
+  };
+  return names[key] || String(key || '');
+}
+function shortEnglishCurrency(code){
+  var names = {SAR:'Saudi Riyal (SAR)', USD:'US Dollar (USD)', CNY:'Chinese Yuan (CNY)', AED:'UAE Dirham (AED)'};
+  return names[code] || String(code || '');
+}
+function shortEnglishDate(value){
+  if(!value) return '';
+  var d = new Date(String(value).slice(0,10)+'T00:00:00');
+  return isNaN(d.getTime()) ? String(value) : new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric'}).format(d);
+}
+function shortEnglishVoucherHTML(rec){
+  var tax = rec.showTax === true, factor = tax ? (1 + VAT_RATE) : 1;
+  var rows = rec.items.map(function(it, i){
+    var price = Number(it.price || 0), qty = Number(it.qty || 0);
+    var unit = it.unit === 'dozen' ? 'dozen' : 'piece';
+    return '<tr><td>'+(i+1)+'</td><td>'+esc(it.itemNo || '—')+'</td><td>'+esc(it.itemName || '—')+'</td>'+
+      '<td>'+esc(qty)+' '+unit+(qty===1?'':'s')+'</td>'+
+      '<td>'+money(price)+' '+esc(curCode(rec.currency))+'</td>'+
+      (tax ? '<td>'+money(price*factor)+' '+esc(curCode(rec.currency))+'</td>' : '')+
+      '<td>'+money(price*qty*factor)+' '+esc(curCode(rec.currency))+'</td></tr>';
+  }).join('');
+  var totalQty = rec.items.reduce(function(sum,it){ return sum + Number(it.qty || 0); },0);
+  var total = rec.items.reduce(function(sum,it){ return sum + Number(it.price || 0)*Number(it.qty || 0)*factor; },0);
+  var meta = [
+    ['Branch', esc(shortEnglishBranchName(rec.warehouse))],
+    ['Date', esc(shortEnglishDate(rec.date))],
+    ['Supplier Name', esc(rec.supplierName || '—')],
+    ['Supplier Invoice No.', esc(rec.invoiceNo || '—')],
+    ['Approval Status', rec.approved ? 'Approved by Supplier' : 'Pending Approval'],
+    ['Notice Status', rec.editedAt ? 'Edited' : 'Original'],
+    ['Currency', esc(shortEnglishCurrency(rec.currency))]
+  ].map(function(m){ return '<div><b>'+m[0]+'</b>'+m[1]+'</div>'; }).join('');
+  var table = '<table class="v-table"><thead><tr><th>No.</th><th>Item No.</th><th>Item Name</th><th>Quantity</th><th>Unit Price</th>'+
+    (tax ? '<th>Unit Price Incl. VAT</th>' : '')+
+    '<th>'+(tax ? 'Total Incl. VAT' : 'Total Amount')+'</th></tr></thead><tbody>'+rows+
+    '<tr><td colspan="3">Grand Total</td><td>'+money(totalQty)+'</td><td></td>'+(tax?'<td></td>':'')+'<td>'+money(total)+' '+esc(curCode(rec.currency))+'</td></tr></tbody></table>';
+  var notes = rec.notes ? '<div class="v-notes"><b>General Notes:</b> '+esc(rec.notes)+'</div>' : '';
+  var edited = rec.editedAt ? '<div class="v-notes"><b>Last Updated:</b> '+esc(shortEnglishDate(rec.editedAt.slice(0,10)))+'</div>' : '';
+  return '<div class="voucher-page" style="direction:ltr;text-align:left;font-family:Arial,Helvetica,sans-serif;">'+
+    '<div class="v-head" style="direction:ltr;text-align:left;">'+
+      '<div class="v-brand" style="direction:ltr;text-align:left;"><div class="pyr-mark"><div class="tier t1"></div><div class="tier t2"></div><div class="tier t3"></div></div>'+
+      '<div><h2>Asalah Al Haram</h2><p>Goods Shortage Notice</p></div></div>'+
+      '<div style="text-align:right;font-size:9px;color:#5C6459;">Notice No.<br><b style="font-size:11px;color:#16302B;">'+esc(rec.voucherNo || '')+'</b></div>'+
+    '</div>'+
+    '<div class="v-title">Goods Shortage Notice</div>'+
+    '<div class="v-meta" style="direction:ltr;text-align:left;">'+meta+'</div>'+
+    '<div style="direction:ltr;">'+table+'</div>'+notes+edited+
+    '<div class="v-sign" style="direction:ltr;text-align:left;">'+
+      '<div>Goods Receiver Signature<div class="line">Name / Signature</div></div>'+
+      '<div>Branch Manager Signature<div class="line">Name / Signature</div></div>'+
+    '</div>'+
+    '<div class="v-foot" style="direction:ltr;text-align:left;"><span>Technical Support: Eng. Salah Ghaleb — 0556321436</span><span>Issued by: '+esc(shortEnglishBranchName(rec.warehouse))+'</span></div>'+
+  '</div>';
+}
+
 function shortWaSummary(records){
   return 'إشعارات نقص بضاعة - أصالة الهرم:\n' + records.map(function(r){
     return 'سند '+r.voucherNo+' | المورد: '+r.supplierName+' | فاتورة: '+(r.invoiceNo||'—')+' | '+fmtDate(r.date);
@@ -4428,6 +4494,13 @@ document.getElementById('shortPdfBtn').addEventListener('click', function(){
   resetShortForm();
   renderShortRecords();
   viewOrDownloadPdf(created, shortVoucherHTML, 'AlHaram-Shortage');
+});
+document.getElementById('shortEnPdfBtn').addEventListener('click', function(){
+  var created = persistShortForm();
+  if(!created) return;
+  resetShortForm();
+  renderShortRecords();
+  viewOrDownloadPdf(created, shortEnglishVoucherHTML, 'AlHaram-Shortage-EN');
 });
 document.getElementById('shortWaBtn').addEventListener('click', function(){
   var created = persistShortForm();
@@ -4453,7 +4526,8 @@ function shortRowHTML(r){
     '<td title="'+esc(r.notes)+'">'+esc((r.notes||'—').slice(0,18))+'</td>' +
     '<td><div class="row-actions">' +
       toggleBtn +
-      '<button class="mini-btn" data-act="pdf" data-id="'+r.id+'">طباعة</button>' +
+      '<button class="mini-btn" data-act="pdf" data-id="'+r.id+'">طباعة عربي</button>' +
+      '<button class="mini-btn" data-act="pdf-en" data-id="'+r.id+'">Print English</button>' +
       '<button class="mini-btn" data-act="wa" data-id="'+r.id+'">واتساب</button>' +
       '<button class="mini-btn" data-act="edit" data-id="'+r.id+'">تعديل</button>' +
       '<button class="mini-btn danger" data-act="del" data-id="'+r.id+'">حذف</button>' +
@@ -4498,6 +4572,7 @@ function handleShortRecordsClick(e){
   var rec = records.find(function(r){ return r.id === id; });
   if(!rec) return;
   if(act === 'pdf'){ viewOrDownloadPdf([rec], shortVoucherHTML, 'AlHaram-Shortage'); }
+  else if(act === 'pdf-en'){ viewOrDownloadPdf([rec], shortEnglishVoucherHTML, 'AlHaram-Shortage-EN'); }
   else if(act === 'wa'){ shareOrDownloadPdf([rec], shortVoucherHTML, 'AlHaram-Shortage', shortWaSummary); }
   else if(act === 'approve'){
     rec.approved = true;
